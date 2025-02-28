@@ -169,3 +169,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.idea/
+*logs*
+last_weights.pth
+*.out
+.nfs*
+test/
+data/
+checkpoints/
+wandb/
