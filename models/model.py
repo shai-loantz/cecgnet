@@ -43,10 +43,9 @@ class Model(LightningModule):
 
     @staticmethod
     def _calculate_metrics(y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
-        labels = y.detach().numpy()
-        logits = y_pred.detach().numpy()
-        prob_outputs = sigmoid(logits)
-        binary_outputs = (prob_outputs > 0.5).int()  # TODO: use config (?)
+        labels = y.detach().cpu().float().numpy()
+        prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
+        binary_outputs = (prob_outputs > 0.5).astype(int)  # TODO: use config (?)
         challenge_score = compute_challenge_score(labels, prob_outputs)
         auroc, auprc = compute_auc(labels, prob_outputs)
         accuracy = compute_accuracy(labels, binary_outputs)
