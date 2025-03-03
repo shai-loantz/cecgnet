@@ -34,7 +34,7 @@ def train_model(data_folder: str, model_folder: str, verbose: bool):
     params = config.get_trainer_params()
     params['callbacks'] = [ModelCheckpoint(
         dirpath=model_folder,
-        filename=config.checkpoint_name,
+        filename=config.get_checkpoint_name(),
         monitor="val_loss",
         mode="min",
         save_top_k=1,
@@ -51,21 +51,30 @@ def train_model(data_folder: str, model_folder: str, verbose: bool):
 # arguments of this function. If you do not train one of the models, then you can return None for the model.
 def load_model(model_folder, verbose):
     model_class = MODELS.get(config.model_name)
-    checkpoint_path = Path(model_folder) / f'{config.checkpoint_name}.ckpt'
+    checkpoint_path = Path(model_folder) / f'{config.get_checkpoint_name()}.ckpt'
     if verbose:
-        print(f'Loading model {config.model_name} from {checkpoint_path}')
+        print(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
 
 
 # Run your trained model. This function is *required*. You should edit this function to add your code, but do *not* change the
 # arguments of this function.
-def run_model(record, model: Model, verbose):
+def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     model.eval()
 
-    features = ECGDataset.extract_features(record)
-    with torch.no_grad():
-        output = model(features).detach().squeeze()
-    probability_output = torch.sigmoid(output)
-    binary_output = (probability_output > config.threshold).int()
+    if verbose:
+        print(f'{record=}')
+        print('Extracting features')
+    features = ECGDataset.extract_features(record, training=False)
 
-    return binary_output, probability_output
+    if verbose:
+        print('Predicting')
+    with torch.no_grad():
+        logit = model(features.unsqueeze(0)).detach().squeeze()
+
+    if verbose:
+        print('Converting logit to probability and binary output')
+    probability_output = torch.sigmoid(logit)
+    binary_output = (probability_output > config.threshold).float()
+
+    return binary_output.item(), probability_output.item()

@@ -1,14 +1,9 @@
-numpy
-torch
+torch==2.6.0
 lightning
 requests>=2.32.0
 tqdm
 wandb
 pydantic
 pydantic-settings
-joblib==1.4.2
 numpy==2.0.2
-pandas==2.2.2
-scikit-learn==1.6.0
 wfdb==4.1.2
-h5py==3.12.1

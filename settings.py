@@ -1,7 +1,6 @@
 from enum import Enum
-from pathlib import Path
+from typing import Optional
 
-from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -57,7 +56,7 @@ class Config(BaseSettings):
     model: ModelConfig
 
     model_name: ModelName = ModelName.SIMPLE
-    checkpoint_name: str
+    checkpoint_name: Optional[str] = None
     validation_size: float
     threshold: float
     manual_config: bool
@@ -76,3 +75,6 @@ class Config(BaseSettings):
         params.update(self.trainer.model_dump())
         params['logger'] = WandbLogger()
         return params
+
+    def get_checkpoint_name(self) -> str:
+        return self.checkpoint_name or self.model_name.value

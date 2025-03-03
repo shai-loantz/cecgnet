@@ -24,7 +24,7 @@ class ECGDataset(Dataset):
         return features, labels
 
     @staticmethod
-    def extract_features(record_file_name: str):
+    def extract_features(record_file_name: str, training: bool = True):
         signal, fields = load_signals(record_file_name)
 
         # make sure leads are in the right order
@@ -35,4 +35,5 @@ class ECGDataset(Dataset):
         pad_width = ((0, 4096 - signal.shape[0]), (0, 0))
         signal = np.pad(signal, pad_width)
         # TODO: pre-process
-        return torch.tensor(signal, dtype=torch.bfloat16).T
+        input_type = torch.bfloat16 if training else torch.float
+        return torch.tensor(signal, dtype=input_type).T

@@ -177,5 +177,6 @@ last_weights.pth
 .nfs*
 test/
 data/
+outputs/
 checkpoints/
 wandb/
