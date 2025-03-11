@@ -12,7 +12,7 @@ class ECGDataset(Dataset):
     def __init__(self, data_folder: str):
         self.record_files = [os.path.join(data_folder, record) for record in find_records(data_folder)]
         if not self.record_files:
-            raise FileNotFoundError('No data were provided.')
+            raise FileNotFoundError('No data was provided.')
 
     def __len__(self):
         return len(self.record_files)

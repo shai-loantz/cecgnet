@@ -1,20 +1,8 @@
-from enum import Enum
-
 import torch
 from torch import nn
 
 from models.blocks import BasicConv
-
-BASE_CHANNELS = 64
-CHANNEL_EXPANSION = 4
-HEAD_HIDDEN_DIM: tuple[int] = tuple()
-
-
-class LayerConf(Enum):
-    SMALL = (2, 2, 2, 2)  # Like resnet_18 but with bottleneck (26 layers)
-    RESNET_50 = (3, 4, 6, 3)
-    RESNET_101 = (3, 4, 23, 3)
-    RESNET_152 = (3, 8, 36, 3)
+from models.resnet.consts import BASE_CHANNELS, LayerConf, CHANNEL_EXPANSION, HEAD_HIDDEN_DIM
 
 
 class ResNetBlock(nn.Module):
@@ -23,9 +11,9 @@ class ResNetBlock(nn.Module):
     def __init__(self, in_channels: int, base_channels: int, expansion: int = 4, downsample: bool = False) -> None:
         super().__init__()
         stride = 2 if downsample else 1
-        self.conv1 = BasicConv(in_channels, base_channels, kernel_size=1)
-        self.conv2 = BasicConv(base_channels, base_channels, kernel_size=3, padding=1, stride=stride)
-        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation=False, kernel_size=1)
+        self.conv1 = BasicConv(in_channels, base_channels, kernel_size=1, bias=False)
+        self.conv2 = BasicConv(base_channels, base_channels, kernel_size=3, padding=1, stride=stride, bias=False)
+        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation=False, kernel_size=1, bias=False)
 
         self.identity_downsample = BasicConv(in_channels,
                                              base_channels * expansion,

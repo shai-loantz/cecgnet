@@ -1,7 +1,7 @@
 from torch.utils.data import random_split, DataLoader
 
 from data_tools.data_set import ECGDataset
-from settings import Config
+from settings import DataLoaderConfig
 
 
 def create_data_loaders(train_dataset: ECGDataset,
@@ -13,11 +13,12 @@ def create_data_loaders(train_dataset: ECGDataset,
     return train_loader, val_loader
 
 
-def get_data_loaders(data_folder: str, config: Config) -> tuple[DataLoader, DataLoader]:
+def get_data_loaders(data_folder: str, config: DataLoaderConfig, validation_size: float) -> tuple[
+    DataLoader, DataLoader]:
     data_set = ECGDataset(data_folder)
     length = len(data_set)
-    valid_size = int(length * config.validation_size)
+    valid_size = int(length * validation_size)
     train_size = length - valid_size
 
     train_dataset, val_dataset = random_split(data_set, [train_size, valid_size])
-    return create_data_loaders(train_dataset, val_dataset, config.data_loader.model_dump())
+    return create_data_loaders(train_dataset, val_dataset, config.model_dump())
