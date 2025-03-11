@@ -1,20 +1,8 @@
-from enum import Enum
-
 import torch
 from torch import nn
 
 from models.blocks import BasicConv
-
-BASE_CHANNELS = 64
-CHANNEL_EXPANSION = 4
-HEAD_HIDDEN_DIM: tuple[int] = tuple()
-
-
-class LayerConf(Enum):
-    SMALL = (2, 2, 2, 2)  # Like resnet_18 but with bottleneck (26 layers)
-    RESNET_50 = (3, 4, 6, 3)
-    RESNET_101 = (3, 4, 23, 3)
-    RESNET_152 = (3, 8, 36, 3)
+from models.resnet.consts import BASE_CHANNELS, LayerConf, CHANNEL_EXPANSION, HEAD_HIDDEN_DIM
 
 
 class ResNetBlock(nn.Module):
@@ -31,8 +19,7 @@ class ResNetBlock(nn.Module):
                                              base_channels * expansion,
                                              activation=False,
                                              kernel_size=1,
-                                             stride=2,
-                                             bias=False) if downsample else None
+                                             stride=2) if downsample else None
         self.activation = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -45,7 +32,7 @@ class ResNetBlock(nn.Module):
 
 def get_tail_module(in_channels: int) -> nn.Sequential:
     return nn.Sequential(
-        BasicConv(in_channels, BASE_CHANNELS, kernel_size=7, stride=2, padding=3, bias=False),
+        BasicConv(in_channels, BASE_CHANNELS, kernel_size=7, stride=2, padding=3),
         nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
     )
 

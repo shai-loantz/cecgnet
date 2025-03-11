@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from lightning import Trainer
-from lightning.pytorch.callbacks import ModelCheckpoint
 
 from data_tools.data_loader import get_data_loaders
 from data_tools.data_set import ECGDataset
@@ -25,21 +24,13 @@ config = Config()
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     if verbose:
         print('Finding the Challenge data...')
-    train_loader, val_loader = get_data_loaders(data_folder, config)
+    train_loader, val_loader = get_data_loaders(data_folder, config.data_loader, config.validation_size)
 
     if verbose:
         print('Training the model on the data...')
 
     model = MODELS.get(config.model_name)(config.model)
-    params = config.get_trainer_params()
-    params['callbacks'] = [ModelCheckpoint(
-        dirpath=model_folder,
-        filename=config.get_checkpoint_name(),
-        monitor="val_loss",
-        mode="min",
-        save_top_k=1,
-        verbose=True
-    )]
+    params = config.get_trainer_params(model_folder)
     trainer = Trainer(**params)
     trainer.fit(model, train_loader, val_loader)
 
@@ -75,6 +66,6 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     if verbose:
         print('Converting logit to probability and binary output')
     probability_output = torch.sigmoid(logit)
-    binary_output = (probability_output > config.threshold).float()
+    binary_output = (probability_output > config.model.threshold).float()
 
     return binary_output.item(), probability_output.item()
