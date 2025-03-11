@@ -1,6 +1,5 @@
 from typing import Type
 
-from models.blocks import SEBlock, SelfAttention, SequentialAttention
 from models.model import Model
 from models.resnet.model import SimpleResNet
 from models.resnet_attention.model import ResNetAttention
