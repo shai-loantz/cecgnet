@@ -13,6 +13,7 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
+        self.threshold = config.threshold
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
         inputs, targets = batch
