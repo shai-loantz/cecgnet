@@ -11,8 +11,8 @@ class ResNetAttention(Model):
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__(config)
-        self.tail = get_attention_tail(config.input_channels)
-        self.layers = get_attention_layers(self.layer_conf, 'SelfAttention')
+        self.tail = get_attention_tail(config.input_channels, config.attention)
+        self.layers = get_attention_layers(self.layer_conf, config.attention)
         self.gap = nn.AdaptiveAvgPool1d(1)
         self.head = get_head_module(self.layer_conf)
 

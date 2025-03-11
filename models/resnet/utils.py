@@ -11,16 +11,15 @@ class ResNetBlock(nn.Module):
     def __init__(self, in_channels: int, base_channels: int, expansion: int = 4, downsample: bool = False) -> None:
         super().__init__()
         stride = 2 if downsample else 1
-        self.conv1 = BasicConv(in_channels, base_channels, kernel_size=1, bias=False)
-        self.conv2 = BasicConv(base_channels, base_channels, kernel_size=3, padding=1, stride=stride, bias=False)
-        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation=False, kernel_size=1, bias=False)
+        self.conv1 = BasicConv(in_channels, base_channels, kernel_size=1)
+        self.conv2 = BasicConv(base_channels, base_channels, kernel_size=3, padding=1, stride=stride)
+        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation=False, kernel_size=1)
 
         self.identity_downsample = BasicConv(in_channels,
                                              base_channels * expansion,
                                              activation=False,
                                              kernel_size=1,
-                                             stride=2,
-                                             bias=False) if downsample else None
+                                             stride=2) if downsample else None
         self.activation = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -33,7 +32,7 @@ class ResNetBlock(nn.Module):
 
 def get_tail_module(in_channels: int) -> nn.Sequential:
     return nn.Sequential(
-        BasicConv(in_channels, BASE_CHANNELS, kernel_size=7, stride=2, padding=3, bias=False),
+        BasicConv(in_channels, BASE_CHANNELS, kernel_size=7, stride=2, padding=3),
         nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
     )
 

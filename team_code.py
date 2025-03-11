@@ -66,6 +66,6 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     if verbose:
         print('Converting logit to probability and binary output')
     probability_output = torch.sigmoid(logit)
-    binary_output = (probability_output > config.threshold).float()
+    binary_output = (probability_output > config.model.threshold).float()
 
     return binary_output.item(), probability_output.item()

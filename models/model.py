@@ -38,15 +38,13 @@ class Model(LightningModule):
         inputs, targets = batch
         outputs = self(inputs)
 
-        metrics = self._calculate_metrics(outputs.clone(), targets.clone(),
-                                          self.config.threshold) if calculate_metrics else {}
+        metrics = self._calculate_metrics(outputs.clone(), targets.clone()) if calculate_metrics else {}
         return self.criterion(outputs, targets), metrics
 
-    @staticmethod
-    def _calculate_metrics(y_pred: Tensor, y: Tensor, threshold: float = 0.5) -> dict[str, Tensor]:
+    def _calculate_metrics(self, y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
         labels = y.detach().cpu().float().numpy()
         prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
-        binary_outputs = (prob_outputs > threshold).astype(int)
+        binary_outputs = (prob_outputs > self.threshold).astype(int)
         challenge_score = compute_challenge_score(labels, prob_outputs)
         auroc, auprc = compute_auc(labels, prob_outputs)
         accuracy = compute_accuracy(labels, binary_outputs)
@@ -61,7 +59,7 @@ class Model(LightningModule):
     def test_model(cls) -> None:
         """Use this just to see the model structure has no errors"""
         batch_size = 7
-        from settings import Config;
+        from settings import Config
         config = Config()
         x = randn(batch_size, config.model.input_channels, config.model.input_length)
         model = cls(config.model)

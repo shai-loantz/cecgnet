@@ -7,6 +7,12 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class Attention(str, Enum):
+    SEBlock = 'SE'
+    SelfAttention = 'self_attention'
+    SequentialAttention = 'sequential_attention'
+
+
 class ModelName(str, Enum):
     SIMPLE = 'simple'
     RESNET_ATTENTION = 'resnet_attention'
@@ -49,6 +55,7 @@ class ModelConfig(BaseModel):
     input_channels: int
     input_length: int
     threshold: float
+    attention: Attention = Attention.SelfAttention
 
 
 class Config(BaseSettings):

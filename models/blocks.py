@@ -1,3 +1,5 @@
+from typing import Type
+
 import torch
 from torch import nn
 
@@ -64,10 +66,19 @@ class SelfAttention(nn.Module):
         return torch.bmm(value, attn_weights.permute(0, 2, 1))
 
 
+# current implementation will work only for same shape input -> output attentions
+ATTENTION: dict[str, Type[nn.Module]] = {
+    'SE': SEBlock,
+    'self_attention': SelfAttention,
+    'sequential_attention': SequentialAttention,
+}
+
+
 class BasicConv(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, *args, activation: bool = True, **kwargs) -> None:
+    def __init__(self, in_channels: int, out_channels: int, *args, activation: bool = True, bias: bool = False,
+                 **kwargs) -> None:
         super().__init__()
-        self.conv = nn.Conv1d(in_channels, out_channels, *args, **kwargs)
+        self.conv = nn.Conv1d(in_channels, out_channels, bias=bias, *args, **kwargs)
         self.bn = nn.BatchNorm1d(out_channels)
         self.activation = nn.ReLU() if activation else None
 
