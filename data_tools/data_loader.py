@@ -13,9 +13,9 @@ def create_data_loaders(train_dataset: ECGDataset,
     return train_loader, val_loader
 
 
-def get_data_loaders(data_folder: str, config: DataLoaderConfig, validation_size: float) -> tuple[
+def get_data_loaders(data_folder: str, config: DataLoaderConfig, validation_size: float, input_length: int) -> tuple[
     DataLoader, DataLoader]:
-    data_set = ECGDataset(data_folder)
+    data_set = ECGDataset(data_folder, input_length)
     length = len(data_set)
     valid_size = int(length * validation_size)
     train_size = length - valid_size

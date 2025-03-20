@@ -5,7 +5,7 @@ import torch
 from lightning import Trainer
 
 from data_tools.data_loader import get_data_loaders
-from data_tools.data_set import ECGDataset
+from data_tools.data_set import extract_features
 from models import Model, MODELS
 from settings import Config
 
@@ -24,7 +24,7 @@ config = Config()
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     if verbose:
         print('Finding the Challenge data...')
-    train_loader, val_loader = get_data_loaders(data_folder, config.data_loader, config.validation_size)
+    train_loader, val_loader = get_data_loaders(data_folder, config.data_loader, config.validation_size, config.model.input_length)
 
     if verbose:
         print('Training the model on the data...')
@@ -56,7 +56,7 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     if verbose:
         print(f'{record=}')
         print('Extracting features')
-    features = ECGDataset.extract_features(record, training=False)
+    features = extract_features(record, config.model.input_length, training=False)
 
     if verbose:
         print('Predicting')
