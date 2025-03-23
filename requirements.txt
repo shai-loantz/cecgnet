@@ -1,9 +1,13 @@
 torch==2.6.0
-lightning
+lightning~=2.5.0.post0
 requests>=2.32.0
 tqdm
 wandb
-pydantic
+pydantic~=2.10.6
 pydantic-settings
 numpy==2.0.2
 wfdb==4.1.2
+pecg==2.0.5
+h5py==3.12.1
+scipy~=1.15.2
+PyWavelets~=1.8.0

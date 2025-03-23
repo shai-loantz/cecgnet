@@ -36,6 +36,12 @@ class DataLoaderConfig(BaseModel):
     prefetch_factor: int = 2
 
 
+class PreprocessConfig(BaseModel):
+    resample_freq: int
+    low_cut_freq: float
+    high_cut_freq: float
+
+
 class TrainerConfig(BaseModel):
     max_epochs: int = 30
     accumulate_grad_batches: int = 16
@@ -62,6 +68,7 @@ class Config(BaseSettings):
     lightning: LightningConfig
     trainer: TrainerConfig
     data_loader: DataLoaderConfig
+    pre_process: PreprocessConfig
     model: ModelConfig
 
     model_name: ModelName = ModelName.SIMPLE
