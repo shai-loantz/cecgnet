@@ -1,4 +1,5 @@
 import numpy as np
+import pywt
 from scipy.signal import resample, butter, sosfiltfilt
 
 from settings import PreprocessConfig
@@ -11,6 +12,7 @@ filters: dict = {}
 def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_length: int, config: PreprocessConfig) -> np.ndarray:
     signal = trim_leading_zeros(signal)
     signal = reorder_leads(signal, signal_names)
+    signal = np.apply_along_axis(remove_baseline_wander, 0, signal)
     sos_filter = get_filter(fs, config.low_cut_freq, config.high_cut_freq)
     signal = filter_signal(signal, sos_filter)
     signal = resample_signal(signal, fs, config.resample_freq)
@@ -80,8 +82,14 @@ def reorder_leads(signal: np.ndarray, signal_names: list[str]) -> np.ndarray:
 
 
 def apply_band_pass_filter(signal: np.ndarray, sos_filter) -> np.ndarray:
-    [ecg_len, ecg_num] = np.shape(signal)
-    filtered_signal = np.zeros([ecg_len, ecg_num])
-    for i in np.arange(ecg_num):
-        filtered_signal[:, i] = sosfiltfilt(sos_filter, signal[:, i])
-    return filtered_signal
+    return np.apply_along_axis(lambda x: sosfiltfilt(sos_filter, x), axis=0, arr=signal)
+
+
+def remove_baseline_wander(signal: np.ndarray, wavelet: str = 'db6') -> np.ndarray:
+    """Use Wavelet transform to remove baseline wander"""
+    max_level = pywt.dwt_max_level(len(signal), wavelet)
+    level = min(6, max_level)
+
+    coeffs = pywt.wavedec(signal, wavelet, level=level)
+    coeffs[0] = np.zeros_like(coeffs[0])
+    return pywt.waverec(coeffs, wavelet)[:len(signal)]
