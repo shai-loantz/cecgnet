@@ -79,11 +79,10 @@ class Config(BaseSettings):
     model_folder: str = 'lightning_logs'
 
     # pre training settings
-    pre_train: bool
-    pre_trainer: TrainerConfig
-    pre_model: ModelConfig
-    pre_loader: DataLoaderConfig
-    pre_trainer: TrainerConfig
+    pretraining: bool
+    pre_trainer: Optional[TrainerConfig] = None
+    pre_model: Optional[ModelConfig] = None
+    pre_loader: Optional[DataLoaderConfig] = None
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
@@ -98,16 +97,20 @@ class Config(BaseSettings):
         super().__init__(**kwargs)
         if self.pretraining:
             # makes copies of the normal settings only changing the relevant parameters
-            self.premodel = self.model.model_copy(update={
-                "learning_rate": self.premodel.learning_rate,
-                "weight_decay": self.premodel.weight_decay,
+            self.pre_model = self.model.model_copy(update={
+                "learning_rate": self.pre_model.learning_rate,
+                "weight_decay": self.pre_model.weight_decay,
             })
-            self.preloader = self.data_loader.model_copy(update={
-                "data_folder": self.preloader.data_folder,
+            self.pre_loader = self.data_loader.model_copy(update={
+                "data_folder": self.pre_loader.data_folder,
             })
             self.pre_trainer = self.trainer.model_copy(update={
                 "max_epochs": self.pre_trainer.max_epochs,
             })
+        else:
+            self.pre_model = None
+            self.pre_loader = None
+            self.pre_trainer = None
 
     def get_predictor_params(self) -> dict:
         params = self.lightning.model_dump()

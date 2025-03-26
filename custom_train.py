@@ -16,7 +16,7 @@ def train_model(args):
     if config.pretraining:
         if verbose:
             print('Pre Training the model...')
-        model = MODELS.get(config.model_name)(config.premodel)
+        model = MODELS.get(config.model_name)(config.pre_model)
         params = config.get_trainer_params()
         run_train(verbose, model, params, config.pre_process, config.pre_loader)
 
