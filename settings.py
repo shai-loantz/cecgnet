@@ -34,6 +34,13 @@ class DataLoaderConfig(BaseModel):
     pin_memory: bool = True
     persistent_workers: bool = True
     prefetch_factor: int = 2
+    input_length: int
+    validation_size: float
+    data_folder: Optional[str] = None
+
+    def get_data_loader_config(self) -> dict:
+        data_loader_config = self.model_dump(exclude={"input_length", "validation_size", "data_folder"})
+        return data_loader_config
 
 
 class PreprocessConfig(BaseModel):
@@ -59,7 +66,6 @@ class ModelConfig(BaseModel):
     learning_rate: float
     weight_decay: float
     input_channels: int
-    input_length: int
     threshold: float
     attention: Attention = Attention.SelfAttention
 
@@ -70,10 +76,17 @@ class Config(BaseSettings):
     data_loader: DataLoaderConfig
     pre_process: PreprocessConfig
     model: ModelConfig
+    model_folder: str = 'lightning_logs'
+
+    # pre training settings
+    pre_train: bool
+    pre_trainer: TrainerConfig
+    pre_model: ModelConfig
+    pre_loader: DataLoaderConfig
+    pre_trainer: TrainerConfig
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
-    validation_size: float
     manual_config: bool
     model_config = SettingsConfigDict(
         env_file='config.env',
@@ -81,23 +94,45 @@ class Config(BaseSettings):
         env_nested_delimiter='__'
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.pretraining:
+            # makes copies of the normal settings only changing the relevant parameters
+            self.premodel = self.model.model_copy(update={
+                "learning_rate": self.premodel.learning_rate,
+                "weight_decay": self.premodel.weight_decay,
+            })
+            self.preloader = self.data_loader.model_copy(update={
+                "data_folder": self.preloader.data_folder,
+            })
+            self.pre_trainer = self.trainer.model_copy(update={
+                "max_epochs": self.pre_trainer.max_epochs,
+            })
+
     def get_predictor_params(self) -> dict:
         params = self.lightning.model_dump()
         return params
 
-    def get_trainer_params(self, model_folder: str) -> dict:
+    def get_trainer_params(self) -> dict:
         params = self.lightning.model_dump()
-        params.update(self.trainer.model_dump())
         params['logger'] = WandbLogger()
         params['callbacks'] = [ModelCheckpoint(
-            dirpath=model_folder,
-            filename=self.get_checkpoint_name(),
+            dirpath=self.model_folder,
+            filename=self.get_checkpoint_name(),  # why? just let it pick automatically, it might write over last one
             monitor="val_loss",
             mode="min",
             save_top_k=1,
             verbose=True
         )]
+        if self.pretraining:
+            params.update(self.pre_trainer.model_dump())
+        else:
+            params.update(self.trainer.model_dump())
         return params
 
     def get_checkpoint_name(self) -> str:
         return self.checkpoint_name or self.model_name.value
+
+    def update_settings(self, data_folder: str, model_folder: str):
+        self.data_loader.data_folder = data_folder
+        self.model_folder = model_folder

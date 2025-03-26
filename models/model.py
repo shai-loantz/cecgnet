@@ -56,13 +56,18 @@ class Model(LightningModule):
     def configure_optimizers(self) -> Optimizer:
         return AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
 
+    def change_params(self, config: ModelConfig) -> None:
+        """ used for changing pretraining to post training """
+        self.config.threshold = config.threshold
+        self.config = config  # will also update optimizers when fit is called
+
     @classmethod
     def test_model(cls) -> None:
         """Use this just to see the model structure has no errors"""
         batch_size = 7
         from settings import Config
         config = Config()
-        x = randn(batch_size, config.model.input_channels, config.model.input_length)
+        x = randn(batch_size, config.model.input_channels, config.data_loader.input_length)
         model = cls(config.model)
         print(model)
         print(summarize(model))

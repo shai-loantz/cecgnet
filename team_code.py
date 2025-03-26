@@ -2,12 +2,11 @@
 from pathlib import Path
 
 import torch
-from lightning import Trainer
 
-from data_tools.data_loader import get_data_loaders
 from data_tools.data_set import extract_features
 from models import Model, MODELS
 from settings import Config
+from utils import run_train
 
 # Edit this script to add your team's code. Some functions are *required*, but you can edit most parts of the required functions,
 # change or remove non-required functions, and add your own functions.
@@ -22,18 +21,10 @@ config = Config()
 
 
 def train_model(data_folder: str, model_folder: str, verbose: bool):
-    if verbose:
-        print('Finding the Challenge data...')
-    train_loader, val_loader = get_data_loaders(data_folder, config.data_loader, config.validation_size, config.model.input_length)
-
-    if verbose:
-        print('Training the model on the data...')
-
+    config.update_settings(data_folder, model_folder)
     model = MODELS.get(config.model_name)(config.model)
-    params = config.get_trainer_params(model_folder)
-    trainer = Trainer(**params)
-    trainer.fit(model, train_loader, val_loader)
-
+    params = config.get_trainer_params()
+    run_train(verbose, model, params, config.pre_process, config.data_loader)
     if verbose:
         print('Done training')
 
@@ -56,7 +47,7 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     if verbose:
         print(f'{record=}')
         print('Extracting features')
-    features = extract_features(record, config.model.input_length, training=False)
+    features = extract_features(record, config.data_loader.input_length, config.pre_process, training=False)
 
     if verbose:
         print('Predicting')
