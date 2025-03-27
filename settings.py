@@ -7,6 +7,14 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class BaseConfig(BaseModel):
+    """ Base class to allow easy pretraining overrides """
+
+    def copy_with_override(self, **kwargs):
+        filtered_kwargs = {k: v for k, v in kwargs.items() if not hasattr(self, k)}
+        return self.model_copy(update=filtered_kwargs)
+
+
 class Attention(str, Enum):
     SEBlock = 'SE'
     SelfAttention = 'self_attention'
@@ -28,7 +36,7 @@ class LightningAccelerator(str, Enum):
     CPU = 'cpu'
 
 
-class DataLoaderConfig(BaseModel):
+class DataLoaderConfig(BaseConfig):
     batch_size: int
     num_workers: int
     pin_memory: bool = True
@@ -49,7 +57,7 @@ class PreprocessConfig(BaseModel):
     high_cut_freq: float
 
 
-class TrainerConfig(BaseModel):
+class TrainerConfig(BaseConfig):
     max_epochs: int = 30
     accumulate_grad_batches: int = 16
 
@@ -62,12 +70,27 @@ class LightningConfig(BaseModel):
     num_nodes: int = 1
 
 
-class ModelConfig(BaseModel):
+class ModelConfig(BaseConfig):
     learning_rate: float
     weight_decay: float
     input_channels: int
     threshold: float
     attention: Attention = Attention.SelfAttention
+
+
+class PreTrainerConfig(TrainerConfig):
+    """ Pretraining-specific trainer config """
+    pass
+
+
+class PreModelConfig(ModelConfig):
+    """ Pretraining-specific model config """
+    pass
+
+
+class PreDataLoaderConfig(DataLoaderConfig):
+    """ Pretraining-specific data loader config """
+    pass
 
 
 class Config(BaseSettings):
@@ -80,9 +103,10 @@ class Config(BaseSettings):
 
     # pre training settings
     pretraining: bool
-    pre_trainer: Optional[TrainerConfig] = None
-    pre_model: Optional[ModelConfig] = None
-    pre_loader: Optional[DataLoaderConfig] = None
+    pre_trainer: Optional[PreTrainerConfig] = None
+    pre_model: Optional[PreModelConfig] = None
+    pre_loader: Optional[PreDataLoaderConfig] = None
+    pretraining_checkpoint_path: Optional[str] = None
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
@@ -97,16 +121,9 @@ class Config(BaseSettings):
         super().__init__(**kwargs)
         if self.pretraining:
             # makes copies of the normal settings only changing the relevant parameters
-            self.pre_model = self.model.model_copy(update={
-                "learning_rate": self.pre_model.learning_rate,
-                "weight_decay": self.pre_model.weight_decay,
-            })
-            self.pre_loader = self.data_loader.model_copy(update={
-                "data_folder": self.pre_loader.data_folder,
-            })
-            self.pre_trainer = self.trainer.model_copy(update={
-                "max_epochs": self.pre_trainer.max_epochs,
-            })
+            self.pre_model = PreModelConfig(**self.model.model_dump())
+            self.pre_loader = PreDataLoaderConfig(**self.data_loader.model_dump())
+            self.pre_trainer = PreTrainerConfig(**self.trainer.model_dump())
         else:
             self.pre_model = None
             self.pre_loader = None
@@ -121,7 +138,7 @@ class Config(BaseSettings):
         params['logger'] = WandbLogger()
         params['callbacks'] = [ModelCheckpoint(
             dirpath=self.model_folder,
-            filename=self.get_checkpoint_name(),  # why? just let it pick automatically, it might write over last one
+            filename=self.get_checkpoint_name(),
             monitor="val_loss",
             mode="min",
             save_top_k=1,
@@ -134,6 +151,8 @@ class Config(BaseSettings):
         return params
 
     def get_checkpoint_name(self) -> str:
+        if self.pretraining:
+            return f'pretraining_{self.checkpoint_name or self.model_name.value}'
         return self.checkpoint_name or self.model_name.value
 
     def update_settings(self, data_folder: str, model_folder: str):

@@ -6,7 +6,7 @@ from settings import DataLoaderConfig, PreprocessConfig
 
 
 def run_train(verbose: bool, model: Model, trainer_params: dict, preprocess: PreprocessConfig,
-              loader: DataLoaderConfig) -> Model:
+              loader: DataLoaderConfig) -> None:
     if verbose:
         print('finding training data...')
     train_loader, val_loader = get_data_loaders(loader, preprocess)
@@ -14,4 +14,3 @@ def run_train(verbose: bool, model: Model, trainer_params: dict, preprocess: Pre
         print('training model...')
     trainer = Trainer(**trainer_params)
     trainer.fit(model, train_loader, val_loader)
-    return model

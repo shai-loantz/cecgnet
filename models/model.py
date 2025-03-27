@@ -58,7 +58,7 @@ class Model(LightningModule):
 
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """
-        self.config.threshold = config.threshold
+        self.threshold = config.threshold
         self.config = config  # will also update optimizers when fit is called
 
     @classmethod
