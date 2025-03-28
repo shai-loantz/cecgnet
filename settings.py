@@ -78,6 +78,12 @@ class ModelConfig(BaseConfig):
     threshold: Optional[float]
     attention: Attention = Attention.SelfAttention
 
+class PreTrainConfig(BaseModel):
+    data_folder: str
+    max_epochs: int
+    learning_rate: float
+    weight_decay: float
+
 class Config(BaseSettings):
     lightning: LightningConfig
     trainer: TrainerConfig
@@ -88,10 +94,12 @@ class Config(BaseSettings):
 
     # pre training settings
     pretraining: bool
+    pretraining_checkpoint_path: Optional[str] = None
+    pre_trainer_config: PreTrainConfig
+
     pre_trainer: Optional[TrainerConfig] = None
     pre_model: Optional[ModelConfig] = None
     pre_loader: Optional[DataLoaderConfig] = None
-    pretraining_checkpoint_path: Optional[str] = None
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
@@ -105,11 +113,11 @@ class Config(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.pretraining:
-            env_vars = self.model_dump()
+            pre_vars = self.pre_trainer_config.model_dump()
             # makes copies of the normal settings only changing the relevant parameters
-            self.pre_model = self.model.copy_with_override(**env_vars.get('pre_model', {}))
-            self.pre_loader = self.data_loader.copy_with_override(**env_vars.get('pre_loader', {}))
-            self.pre_trainer = self.trainer.copy_with_override(**env_vars.get('pre_trainer', {}))
+            self.pre_model = self.model.copy_with_override(**pre_vars)
+            self.pre_loader = self.data_loader.copy_with_override(**pre_vars)
+            self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
         else:
             self.pre_model = None
             self.pre_loader = None
