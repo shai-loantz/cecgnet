@@ -11,7 +11,7 @@ class BaseConfig(BaseModel):
     """ Base class to allow easy pretraining overrides """
 
     def copy_with_override(self, **kwargs):
-        filtered_kwargs = {k: v for k, v in kwargs.items() if not hasattr(self, k)}
+        filtered_kwargs = {k: v for k, v in kwargs.items() if hasattr(self, k)}
         return self.model_copy(update=filtered_kwargs)
 
 
@@ -37,13 +37,13 @@ class LightningAccelerator(str, Enum):
 
 
 class DataLoaderConfig(BaseConfig):
-    batch_size: int
-    num_workers: int
+    batch_size: Optional[int]
+    num_workers: Optional[int]
     pin_memory: bool = True
     persistent_workers: bool = True
     prefetch_factor: int = 2
-    input_length: int
-    validation_size: float
+    input_length: Optional[int]
+    validation_size: Optional[float]
     data_folder: Optional[str] = None
 
     def get_data_loader_config(self) -> dict:
@@ -71,27 +71,12 @@ class LightningConfig(BaseModel):
 
 
 class ModelConfig(BaseConfig):
+    _nested_model_default_partial_update = True
     learning_rate: float
     weight_decay: float
-    input_channels: int
-    threshold: float
+    input_channels: Optional[int]
+    threshold: Optional[float]
     attention: Attention = Attention.SelfAttention
-
-
-class PreTrainerConfig(TrainerConfig):
-    """ Pretraining-specific trainer config """
-    pass
-
-
-class PreModelConfig(ModelConfig):
-    """ Pretraining-specific model config """
-    pass
-
-
-class PreDataLoaderConfig(DataLoaderConfig):
-    """ Pretraining-specific data loader config """
-    pass
-
 
 class Config(BaseSettings):
     lightning: LightningConfig
@@ -103,9 +88,9 @@ class Config(BaseSettings):
 
     # pre training settings
     pretraining: bool
-    pre_trainer: Optional[PreTrainerConfig] = None
-    pre_model: Optional[PreModelConfig] = None
-    pre_loader: Optional[PreDataLoaderConfig] = None
+    pre_trainer: Optional[TrainerConfig] = None
+    pre_model: Optional[ModelConfig] = None
+    pre_loader: Optional[DataLoaderConfig] = None
     pretraining_checkpoint_path: Optional[str] = None
 
     model_name: ModelName = ModelName.SIMPLE
@@ -120,10 +105,11 @@ class Config(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.pretraining:
+            env_vars = self.model_dump()
             # makes copies of the normal settings only changing the relevant parameters
-            self.pre_model = PreModelConfig(**self.model.model_dump())
-            self.pre_loader = PreDataLoaderConfig(**self.data_loader.model_dump())
-            self.pre_trainer = PreTrainerConfig(**self.trainer.model_dump())
+            self.pre_model = self.model.copy_with_override(**env_vars.get('pre_model', {}))
+            self.pre_loader = self.data_loader.copy_with_override(**env_vars.get('pre_loader', {}))
+            self.pre_trainer = self.trainer.copy_with_override(**env_vars.get('pre_trainer', {}))
         else:
             self.pre_model = None
             self.pre_loader = None

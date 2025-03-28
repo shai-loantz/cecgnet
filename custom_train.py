@@ -1,11 +1,19 @@
+import argparse
+
 from helper_code import *
 from models import MODELS
 from settings import Config
-from train_model import get_parser
 from utils import run_train
 
 config = Config()
 
+def get_parser():
+    description = 'Train the Challenge model.'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-d', '--data_folder', type=str)
+    parser.add_argument('-m', '--model_folder', type=str)
+    parser.add_argument('-v', '--verbose', action='store_true')
+    return parser
 
 def train_model(model_folder: str, data_folder: str, verbose: bool):
     if data_folder:
