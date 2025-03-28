@@ -37,13 +37,13 @@ class LightningAccelerator(str, Enum):
 
 
 class DataLoaderConfig(BaseConfig):
-    batch_size: Optional[int]
-    num_workers: Optional[int]
+    batch_size: int
+    num_workers: int
     pin_memory: bool = True
     persistent_workers: bool = True
     prefetch_factor: int = 2
-    input_length: Optional[int]
-    validation_size: Optional[float]
+    input_length: int
+    validation_size: float
     data_folder: Optional[str] = None
 
     def get_data_loader_config(self) -> dict:
@@ -74,15 +74,17 @@ class ModelConfig(BaseConfig):
     _nested_model_default_partial_update = True
     learning_rate: float
     weight_decay: float
-    input_channels: Optional[int]
-    threshold: Optional[float]
+    input_channels: int
+    threshold: float
     attention: Attention = Attention.SelfAttention
+
 
 class PreTrainConfig(BaseModel):
     data_folder: str
     max_epochs: int
     learning_rate: float
     weight_decay: float
+
 
 class Config(BaseSettings):
     lightning: LightningConfig
@@ -141,9 +143,8 @@ class Config(BaseSettings):
         return params
 
     def get_checkpoint_name(self) -> str:
-        if self.pretraining:
-            return f'pretraining_{self.checkpoint_name or self.model_name.value}'
-        return self.checkpoint_name or self.model_name.value
+        name = self.checkpoint_name or self.model_name.value
+        return f'pretraining_{name}' if self.pretraining else name
 
     def update_settings(self, data_folder: str, model_folder: str):
         self.data_loader.data_folder = data_folder

@@ -24,18 +24,16 @@ def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
     model = MODELS.get(config.model_name)(config.model)
     params = config.get_trainer_params()
-    run_train(verbose, model, params, config.pre_process, config.data_loader)
-    if verbose:
-        print('Done training')
+    run_train(model, params, config.pre_process, config.data_loader)
+    print('Done training')
 
 
 # Load your trained models. This function is *required*. You should edit this function to add your code, but do *not* change the
 # arguments of this function. If you do not train one of the models, then you can return None for the model.
-def load_model(model_folder, verbose):
+def load_model(model_folder: str, verbose: bool):
     model_class = MODELS.get(config.model_name)
     checkpoint_path = Path(model_folder) / f'{config.get_checkpoint_name()}.ckpt'
-    if verbose:
-        print(f'Loading model {config.model_name.value} from {checkpoint_path}')
+    print(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
 
 
@@ -44,18 +42,14 @@ def load_model(model_folder, verbose):
 def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     model.eval()
 
-    if verbose:
-        print(f'{record=}')
-        print('Extracting features')
+    print('Extracting features')
     features = extract_features(record, config.data_loader.input_length, config.pre_process, training=False)
 
-    if verbose:
-        print('Predicting')
+    print('Predicting')
     with torch.no_grad():
         logit = model(features.unsqueeze(0)).detach().squeeze()
 
-    if verbose:
-        print('Converting logit to probability and binary output')
+    print('Converting logit to probability and binary output')
     probability_output = torch.sigmoid(logit)
     binary_output = (probability_output > config.model.threshold).float()
 

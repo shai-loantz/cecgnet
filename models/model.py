@@ -13,7 +13,6 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
-        self.threshold = config.threshold
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
         inputs, targets = batch
@@ -45,7 +44,7 @@ class Model(LightningModule):
     def _calculate_metrics(self, y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
         labels = y.detach().cpu().float().numpy()
         prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
-        binary_outputs = (prob_outputs > self.threshold).astype(int)
+        binary_outputs = (prob_outputs > self.config.threshold).astype(int)
         challenge_score = compute_challenge_score(labels, prob_outputs)
         auroc, auprc = compute_auc(labels, prob_outputs)
         accuracy = compute_accuracy(labels, binary_outputs)
@@ -58,7 +57,6 @@ class Model(LightningModule):
 
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """
-        self.threshold = config.threshold
         self.config = config  # will also update optimizers when fit is called
 
     @classmethod

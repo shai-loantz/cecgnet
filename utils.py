@@ -5,12 +5,10 @@ from models import Model
 from settings import DataLoaderConfig, PreprocessConfig
 
 
-def run_train(verbose: bool, model: Model, trainer_params: dict, preprocess: PreprocessConfig,
+def run_train(model: Model, trainer_params: dict, preprocess: PreprocessConfig,
               loader: DataLoaderConfig) -> None:
-    if verbose:
-        print('finding training data...')
+    print('finding training data...')
     train_loader, val_loader = get_data_loaders(loader, preprocess)
-    if verbose:
-        print('training model...')
+    print('training model...')
     trainer = Trainer(**trainer_params)
     trainer.fit(model, train_loader, val_loader)
