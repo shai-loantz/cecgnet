@@ -118,10 +118,6 @@ class Config(BaseSettings):
             self.pre_model = self.model.copy_with_override(**pre_vars)
             self.pre_loader = self.data_loader.copy_with_override(**pre_vars)
             self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
-        else:
-            self.pre_model = None
-            self.pre_loader = None
-            self.pre_trainer = None
 
     def get_predictor_params(self) -> dict:
         params = self.lightning.model_dump()
