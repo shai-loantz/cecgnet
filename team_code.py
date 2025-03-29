@@ -22,7 +22,7 @@ config = Config()
 
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
-    model = MODELS.get(config.model_name)(config.model)
+    model = MODELS[config.model_name](config.model)
     params = config.get_trainer_params()
     run_train(model, params, config.pre_process, config.data_loader)
     print('Done training')
@@ -31,7 +31,7 @@ def train_model(data_folder: str, model_folder: str, verbose: bool):
 # Load your trained models. This function is *required*. You should edit this function to add your code, but do *not* change the
 # arguments of this function. If you do not train one of the models, then you can return None for the model.
 def load_model(model_folder: str, verbose: bool):
-    model_class = MODELS.get(config.model_name)
+    model_class = MODELS[config.model_name]
     checkpoint_path = Path(model_folder) / f'{config.get_checkpoint_name()}.ckpt'
     print(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)

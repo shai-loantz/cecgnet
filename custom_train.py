@@ -25,7 +25,7 @@ def train_model():
 
 
 def load_model(checkpoint_path: str):
-    model_class = MODELS.get(config.model_name)
+    model_class = MODELS[config.model_name]
     print(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
 

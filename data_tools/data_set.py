@@ -22,7 +22,10 @@ class ECGDataset(Dataset):
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         record_file_name = self.record_files[idx]
-        features = extract_features(record_file_name, self.input_length, self.preprocess_config)
+        try:
+            features = extract_features(record_file_name, self.input_length, self.preprocess_config)
+        except Exception as ex:
+            raise Exception(f'Failed extracting features for {record_file_name} ({idx=})') from ex
         labels = torch.tensor([load_label(record_file_name)], dtype=torch.float32)
         return features, labels
 
