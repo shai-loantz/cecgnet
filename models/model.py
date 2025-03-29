@@ -6,6 +6,7 @@ from torch.optim import AdamW, Optimizer
 
 from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
+from utils.logger import logger
 
 
 class Model(LightningModule):
@@ -67,10 +68,10 @@ class Model(LightningModule):
         config = Config()
         x = randn(batch_size, config.model.input_channels, config.data_loader.input_length)
         model = cls(config.model)
-        print(model)
-        print(summarize(model))
+        logger.info(str(model))
+        logger.info(summarize(model))
         logits = model(x).detach().squeeze()
         assert logits.size() == Size([batch_size])
         probs = sigmoid(logits)
-        print(probs)
-        print((probs > config.threshold).int())
+        logger.info(probs)
+        logger.info((probs > config.threshold).int())

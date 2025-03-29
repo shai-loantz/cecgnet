@@ -2,6 +2,7 @@ from torch.utils.data import random_split, DataLoader
 
 from data_tools.data_set import ECGDataset
 from settings import DataLoaderConfig, PreprocessConfig
+from utils.logger import logger
 
 
 def create_data_loaders(train_dataset: ECGDataset,
@@ -9,7 +10,7 @@ def create_data_loaders(train_dataset: ECGDataset,
                         data_loader_config: dict) -> tuple[DataLoader, DataLoader]:
     train_loader = DataLoader(train_dataset, shuffle=True, **data_loader_config)
     val_loader = DataLoader(val_dataset, shuffle=False, **data_loader_config)
-    print(f'Train: {len(train_loader.dataset)}, Val: {len(val_loader.dataset)}')
+    logger.debug(f'Train: {len(train_loader.dataset)}, Val: {len(val_loader.dataset)}')
     return train_loader, val_loader
 
 

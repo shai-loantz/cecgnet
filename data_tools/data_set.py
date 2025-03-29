@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from data_tools.preprocess import preprocess
 from helper_code import find_records, load_label, load_signals
 from settings import PreprocessConfig
+from utils.logger import logger
 
 
 class ECGDataset(Dataset):
@@ -24,8 +25,9 @@ class ECGDataset(Dataset):
         record_file_name = self.record_files[idx]
         try:
             features = extract_features(record_file_name, self.input_length, self.preprocess_config)
-        except Exception as ex:
-            raise Exception(f'Failed extracting features for {record_file_name} ({idx=})') from ex
+        except Exception:
+            logger.exception(f'Failed extracting features for {record_file_name} ({idx=})')
+            features = torch.zeros(12, 934, dtype=torch.bfloat16)
         labels = torch.tensor([load_label(record_file_name)], dtype=torch.float32)
         return features, labels
 
