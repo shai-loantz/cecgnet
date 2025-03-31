@@ -7,6 +7,7 @@ config = Config()
 
 
 def train_model():
+    restart_wandb_run()
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
@@ -15,6 +16,7 @@ def train_model():
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False
+        restart_wandb_run()
         logger.info('Pre-training completed')
     else:  # load from pretrained model
         model = load_model(config.pretraining_checkpoint_path)
@@ -25,6 +27,12 @@ def train_model():
     return model
 
 
+def restart_wandb_run():
+    run_name = config.get_checkpoint_name()
+    wandb.finish()
+    wandb.init(name=run_name, reinit=True)
+
+
 def load_model(checkpoint_path: str):
     model_class = MODELS[config.model_name]
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
@@ -32,4 +40,8 @@ def load_model(checkpoint_path: str):
 
 
 if __name__ == '__main__':
-    train_model()
+    import wandb
+    try:
+        train_model()
+    finally:
+        wandb.finish()
