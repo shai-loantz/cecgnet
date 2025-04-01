@@ -8,6 +8,12 @@ from pathlib import Path
 import torch.distributed as dist
 
 
+class FlushStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()  # Force flush after each log
+
+
 def setup_logger():
     """Setup logger for each GPU process in DDP"""
     rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
@@ -38,13 +44,13 @@ def setup_logger():
     error_file_handler.setFormatter(formatter)
 
     # stdout
-    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler = FlushStreamHandler(sys.stdout)
     stdout_handler.setLevel(logging.INFO if rank == 0 else logging.CRITICAL)  # Only rank 0 prints
     stdout_handler.addFilter(lambda record: record.levelno <= logging.INFO)
     stdout_handler.setFormatter(formatter)
 
     # stderr
-    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler = FlushStreamHandler(sys.stderr)
     stderr_handler.setLevel(logging.WARNING if rank == 0 else logging.CRITICAL)  # Only rank 0 prints
     stderr_handler.setFormatter(formatter)
 
