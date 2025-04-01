@@ -3,6 +3,7 @@ import pywt
 from scipy.signal import resample, butter, sosfiltfilt
 
 from settings import PreprocessConfig
+from utils.logger import setup_logger
 
 POSSIBLE_FS = (400, 500)  # Sampling frequencies of our known datasets
 FILTER_ORDER = 10
@@ -10,7 +11,7 @@ filters: dict = {}
 
 
 def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_length: int, config: PreprocessConfig) -> np.ndarray:
-    signal = trim_leading_zeros(signal)
+    # signal = trim_leading_zeros(signal)  # TODO: what are we doing with padding?
     signal = reorder_leads(signal, signal_names)
     signal = np.apply_along_axis(remove_baseline_wander, 0, signal)
     sos_filter = get_filter(fs, config.low_cut_freq, config.high_cut_freq)
@@ -55,7 +56,11 @@ def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
     If smaller, raise an exception. if bigger, cut the end.
     """
     if signal.shape[0] < input_length:
-        raise Exception(f'signal is not long enough. {signal.shape[0]=} < {input_length=}')
+        logger = setup_logger()
+        logger.debug(f'signal is not long enough. {signal.shape[0]=} < {input_length=}. Padding')
+        padded = np.zeros((input_length, 12))
+        padded[:signal.shape[0], :] = signal
+        return padded
     return signal[:input_length, :]
 
 

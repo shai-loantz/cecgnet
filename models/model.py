@@ -1,3 +1,4 @@
+import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
@@ -6,6 +7,7 @@ from torch.optim import AdamW, Optimizer
 
 from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
+from utils.logger import setup_logger, logger
 
 
 class Model(LightningModule):
@@ -13,9 +15,10 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
-        self.threshold = config.threshold
+        self.our_logger = setup_logger()
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
+        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {dist.get_rank()=}')
         inputs, targets = batch
         loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
         self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)
@@ -45,7 +48,7 @@ class Model(LightningModule):
     def _calculate_metrics(self, y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
         labels = y.detach().cpu().float().numpy()
         prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
-        binary_outputs = (prob_outputs > self.threshold).astype(int)
+        binary_outputs = (prob_outputs > self.config.threshold).astype(int)
         challenge_score = compute_challenge_score(labels, prob_outputs)
         auroc, auprc = compute_auc(labels, prob_outputs)
         accuracy = compute_accuracy(labels, binary_outputs)
@@ -56,18 +59,22 @@ class Model(LightningModule):
     def configure_optimizers(self) -> Optimizer:
         return AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
 
+    def change_params(self, config: ModelConfig) -> None:
+        """ used for changing pretraining to post training """
+        self.config = config  # will also update optimizers when fit is called
+
     @classmethod
     def test_model(cls) -> None:
         """Use this just to see the model structure has no errors"""
         batch_size = 7
         from settings import Config
         config = Config()
-        x = randn(batch_size, config.model.input_channels, config.model.input_length)
+        x = randn(batch_size, config.model.input_channels, config.data_loader.input_length)
         model = cls(config.model)
-        print(model)
-        print(summarize(model))
+        logger.info(str(model))
+        logger.info(summarize(model))
         logits = model(x).detach().squeeze()
         assert logits.size() == Size([batch_size])
         probs = sigmoid(logits)
-        print(probs)
-        print((probs > config.threshold).int())
+        logger.info(probs)
+        logger.info((probs > config.threshold).int())
