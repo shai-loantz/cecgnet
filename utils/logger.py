@@ -14,16 +14,23 @@ class FlushStreamHandler(logging.StreamHandler):
         self.flush()  # Force flush after each log
 
 
+base_dir = Path(os.path.dirname(os.path.realpath(__file__)))
+now = datetime.now()
+log_dir = base_dir / Path('..') / Path("logs") / now.strftime("%Y%m%d-%H%M%S")
+os.makedirs(log_dir, exist_ok=True)
+
+
+def is_main_proc():
+    return int(os.environ.get("SLURM_PROCID", 0)) == 0  # SLURM process ID
+
+
 def setup_logger():
     """Setup logger for each GPU process in DDP"""
     rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
-    base_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-    now = datetime.now()
-    log_dir = base_dir / Path('..') / Path("logs") / now.strftime("%Y%m%d-%H%M%S")
-    os.makedirs(log_dir, exist_ok=True)
+    should_log = is_main_proc() or dist.is_initialized()
 
     logger = logging.getLogger("cecgnet")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG if should_log else logging.CRITICAL)
     logger.propagate = False
 
     formatter = logging.Formatter(f'[GPU {rank}] %(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -45,13 +52,13 @@ def setup_logger():
 
     # stdout
     stdout_handler = FlushStreamHandler(sys.stdout)
-    stdout_handler.setLevel(logging.INFO if rank == 0 else logging.CRITICAL)  # Only rank 0 prints
-    stdout_handler.addFilter(lambda record: record.levelno <= logging.INFO)
+    stdout_handler.setLevel(logging.INFO if is_main_proc() else logging.CRITICAL)  # Only rank 0 prints
+    stdout_handler.addFilter(lambda record: record.levelno == logging.INFO)
     stdout_handler.setFormatter(formatter)
 
     # stderr
     stderr_handler = FlushStreamHandler(sys.stderr)
-    stderr_handler.setLevel(logging.WARNING if rank == 0 else logging.CRITICAL)  # Only rank 0 prints
+    stderr_handler.setLevel(logging.WARNING if is_main_proc() else logging.CRITICAL)  # Only rank 0 prints
     stderr_handler.setFormatter(formatter)
 
     if not logger.hasHandlers():

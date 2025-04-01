@@ -6,7 +6,8 @@ from torch.optim import AdamW, Optimizer
 
 from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
-from utils.logger import logger
+from utils.logger import setup_logger
+import torch.distributed as dist
 
 
 class Model(LightningModule):
@@ -14,9 +15,10 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
+        self.our_logger = setup_logger()
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
+        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {dist.get_rank()=}')
         inputs, targets = batch
         loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
         self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)

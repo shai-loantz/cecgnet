@@ -3,7 +3,7 @@ import pywt
 from scipy.signal import resample, butter, sosfiltfilt
 
 from settings import PreprocessConfig
-from utils.logger import logger
+from utils.logger import setup_logger
 
 POSSIBLE_FS = (400, 500)  # Sampling frequencies of our known datasets
 FILTER_ORDER = 10
@@ -56,6 +56,7 @@ def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
     If smaller, raise an exception. if bigger, cut the end.
     """
     if signal.shape[0] < input_length:
+        logger = setup_logger()
         logger.debug(f'signal is not long enough. {signal.shape[0]=} < {input_length=}. Padding')
         padded = np.zeros((input_length, 12))
         padded[:signal.shape[0], :] = signal

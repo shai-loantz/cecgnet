@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import Optional
 
@@ -136,6 +137,7 @@ class Config(BaseSettings):
             save_top_k=1,
             verbose=True
         )]
+        params['enable_progress_bar'] = (int(os.environ.get("LOCAL_RANK", 0)) == 0)  # Only show for rank 0
         if self.pretraining:
             params.update(self.pre_trainer.model_dump())
         else:
