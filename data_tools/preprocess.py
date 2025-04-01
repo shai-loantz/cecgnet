@@ -56,7 +56,7 @@ def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
     If smaller, raise an exception. if bigger, cut the end.
     """
     if signal.shape[0] < input_length:
-        logger.warning(f'signal is not long enough. {signal.shape[0]=} < {input_length=}. Padding')
+        logger.debug(f'signal is not long enough. {signal.shape[0]=} < {input_length=}. Padding')
         padded = np.zeros((input_length, 12))
         padded[:signal.shape[0], :] = signal
         return padded
