@@ -2,6 +2,7 @@ import secrets
 
 from models import MODELS
 from settings import Config
+from utils.ddp import is_main_proc
 from utils.logger import logger
 from utils.train import run_train
 
@@ -31,9 +32,10 @@ def train_model():
 
 
 def restart_wandb_run():
-    run_name = f'{config.get_checkpoint_name()}_{RUN_POSTFIX}'
-    wandb.finish()
-    wandb.init(name=run_name, reinit=True)
+    if is_main_proc():
+        run_name = f'{config.get_checkpoint_name()}_{RUN_POSTFIX}'
+        wandb.finish()
+        wandb.init(name=run_name, reinit=True)
 
 
 def load_model(checkpoint_path: str):

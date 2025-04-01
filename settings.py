@@ -1,4 +1,3 @@
-import os
 from enum import Enum
 from typing import Optional
 
@@ -6,6 +5,8 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from utils.ddp import is_main_proc
 
 
 class BaseConfig(BaseModel):
@@ -128,7 +129,7 @@ class Config(BaseSettings):
 
     def get_trainer_params(self) -> dict:
         params = self.lightning.model_dump()
-        params['logger'] = WandbLogger()
+        params['logger'] = WandbLogger() if is_main_proc() else None
         params['callbacks'] = [ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),
@@ -137,7 +138,8 @@ class Config(BaseSettings):
             save_top_k=1,
             verbose=True
         )]
-        params['enable_progress_bar'] = (int(os.environ.get("LOCAL_RANK", 0)) == 0)  # Only show for rank 0
+        params['enable_progress_bar'] = is_main_proc()
+
         if self.pretraining:
             params.update(self.pre_trainer.model_dump())
         else:

@@ -1,3 +1,4 @@
+import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
@@ -6,8 +7,7 @@ from torch.optim import AdamW, Optimizer
 
 from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
-from utils.logger import setup_logger
-import torch.distributed as dist
+from utils.logger import setup_logger, logger
 
 
 class Model(LightningModule):

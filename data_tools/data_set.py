@@ -17,6 +17,7 @@ class ECGDataset(Dataset):
         self.preprocess_config = preprocess_config
         if not self.record_files:
             raise FileNotFoundError('No data was provided.')
+        self.logger = setup_logger()
 
     def __len__(self):
         return len(self.record_files)
@@ -26,8 +27,7 @@ class ECGDataset(Dataset):
         try:
             features = extract_features(record_file_name, self.input_length, self.preprocess_config)
         except Exception:
-            logger = setup_logger()
-            logger.exception(f'Failed extracting features for {record_file_name} ({idx=})')
+            self.logger.exception(f'Failed extracting features for {record_file_name} ({idx=})')
             features = torch.zeros(12, 934, dtype=torch.bfloat16)
         labels = torch.tensor([load_label(record_file_name)], dtype=torch.float32)
         return features, labels
