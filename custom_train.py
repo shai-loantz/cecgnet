@@ -1,9 +1,12 @@
+import secrets
+
 from models import MODELS
 from settings import Config
 from utils.logger import logger
 from utils.train import run_train
 
 config = Config()
+RUN_POSTFIX = secrets.token_hex(2)
 
 
 def train_model():
@@ -28,7 +31,7 @@ def train_model():
 
 
 def restart_wandb_run():
-    run_name = config.get_checkpoint_name()
+    run_name = f'{config.get_checkpoint_name()}_{RUN_POSTFIX}'
     wandb.finish()
     wandb.init(name=run_name, reinit=True)
 
@@ -41,6 +44,7 @@ def load_model(checkpoint_path: str):
 
 if __name__ == '__main__':
     import wandb
+
     try:
         train_model()
     finally:
