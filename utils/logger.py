@@ -66,7 +66,7 @@ def setup_logger():
     }:
         lib_logger = logging.getLogger(lib)
         lib_logger.handlers = logger.handlers  # Use the same handlers
-        lib_logger.setLevel(logging.DEBUG)
+        lib_logger.setLevel(logging.INFO)
         lib_logger.propagate = False  # Prevent duplicate logs
 
     return logger
