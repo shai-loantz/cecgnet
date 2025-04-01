@@ -7,7 +7,7 @@ from settings import ModelConfig
 
 
 class ResNetAttention(Model):
-    layer_conf = LayerConf.SMALL
+    layer_conf = LayerConf.RESNET_101
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__(config)
