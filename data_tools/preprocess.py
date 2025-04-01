@@ -10,7 +10,7 @@ filters: dict = {}
 
 
 def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_length: int, config: PreprocessConfig) -> np.ndarray:
-    signal = trim_leading_zeros(signal)
+    # signal = trim_leading_zeros(signal)
     signal = reorder_leads(signal, signal_names)
     signal = np.apply_along_axis(remove_baseline_wander, 0, signal)
     sos_filter = get_filter(fs, config.low_cut_freq, config.high_cut_freq)
