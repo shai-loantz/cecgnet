@@ -14,6 +14,14 @@ LOG_DIR = BASE_DIR / Path('..') / Path("logs") / datetime.now().strftime("%Y%m%d
 os.makedirs(LOG_DIR, exist_ok=True)
 
 
+def get_file_handler(log_level: int, formatter: logging.Formatter, rank: int) -> logging.FileHandler:
+    level_name = logging.getLevelName(log_level).lower()
+    handler = logging.FileHandler(LOG_DIR / f"{level_name}_{rank}.log")
+    handler.setLevel(log_level)
+    handler.setFormatter(formatter)
+    return handler
+
+
 def setup_logger():
     """Setup logger for each GPU process in DDP"""
     rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
@@ -26,19 +34,9 @@ def setup_logger():
     formatter = logging.Formatter(f'{format_prefix}%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Debug file handler
-    debug_handler = logging.FileHandler(LOG_DIR / f"debug_{rank}.log")
-    debug_handler.setLevel(logging.DEBUG)
-    debug_handler.setFormatter(formatter)
-
-    # Info file handler
-    info_file_handler = logging.FileHandler(LOG_DIR / f"info_{rank}.log")
-    info_file_handler.setLevel(logging.INFO)
-    info_file_handler.setFormatter(formatter)
-
-    # Error file handler
-    error_file_handler = logging.FileHandler(LOG_DIR / f"error_{rank}.log")
-    error_file_handler.setLevel(logging.ERROR)
-    error_file_handler.setFormatter(formatter)
+    debug_handler = get_file_handler(logging.DEBUG, formatter, rank)
+    info_file_handler = get_file_handler(logging.INFO, formatter, rank)
+    error_file_handler = get_file_handler(logging.ERROR, formatter, rank)
 
     # stdout
     stdout_handler = logging.StreamHandler(sys.stdout)

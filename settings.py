@@ -73,7 +73,6 @@ class LightningConfig(BaseModel):
 
 
 class ModelConfig(BaseConfig):
-    _nested_model_default_partial_update = True
     learning_rate: float
     weight_decay: float
     input_channels: int
