@@ -16,7 +16,7 @@ class Model(LightningModule):
         self.criterion = nn.BCEWithLogitsLoss()
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        logger.debug(f'Training step {batch_idx=}, {len(batch)=}')
+        logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
         inputs, targets = batch
         loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
         self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)
