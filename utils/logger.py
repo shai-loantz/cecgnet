@@ -22,7 +22,8 @@ def setup_logger():
     logger.setLevel(logging.DEBUG if should_log() else logging.CRITICAL)
     logger.propagate = False
 
-    formatter = logging.Formatter(f'[GPU {rank}] %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    format_prefix = f'[GPU {rank}] ' if dist.is_initialized() else ''
+    formatter = logging.Formatter(f'{format_prefix}%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Debug file handler
     debug_handler = logging.FileHandler(LOG_DIR / f"debug_{rank}.log")
