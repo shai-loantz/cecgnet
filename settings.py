@@ -126,9 +126,9 @@ class Config(BaseSettings):
         params = self.lightning.model_dump()
         return params
 
-    def get_trainer_params(self) -> dict:
+    def get_trainer_params(self, use_wandb: bool = True) -> dict:
         params = self.lightning.model_dump()
-        params['logger'] = WandbLogger() if is_main_proc() else None
+        params['logger'] = WandbLogger() if use_wandb and is_main_proc() else None
         params['callbacks'] = [ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),

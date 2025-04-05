@@ -24,7 +24,7 @@ config = Config()
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
     model = MODELS[config.model_name](config.model)
-    params = config.get_trainer_params()
+    params = config.get_trainer_params(False)
     run_train(model, params, config.pre_process, config.data_loader)
     logger.info('Done training')
 
