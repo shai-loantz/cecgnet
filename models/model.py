@@ -18,7 +18,8 @@ class Model(LightningModule):
         self.our_logger = setup_logger()
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {dist.get_rank()=}')
+        rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
+        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {rank=}')
         inputs, targets = batch
         loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
         self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)
