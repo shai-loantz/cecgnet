@@ -54,11 +54,13 @@ class Model(LightningModule):
     def on_test_epoch_end(self) -> None:
         self._metrics_epoch_end('test')
 
-    def _aggregate(self, accumulated: list[Tensor]) -> Tensor:
+    def _aggregate(self, accumulated: list[Tensor]) -> Tensor | None:
         aggregated = cat(accumulated, dim=0)
         aggregated = self.all_gather(aggregated)
-        new_batch_size = self.trainer.world_size * aggregated.shape[0]
-        return aggregated.view(new_batch_size, *aggregated.shape[1:])
+        if self.trainer.global_rank == 0:
+            new_batch_size = self.trainer.world_size * aggregated.shape[0]
+            return aggregated.view(new_batch_size, *aggregated.shape[1:])
+        return None
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch
