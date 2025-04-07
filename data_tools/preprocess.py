@@ -3,7 +3,7 @@ import pywt
 from scipy.signal import resample, butter, sosfiltfilt
 
 from settings import PreprocessConfig
-from utils.logger import setup_logger
+from utils.logger import logger
 
 POSSIBLE_FS = (400, 500)  # Sampling frequencies of our known datasets
 FILTER_ORDER = 10
@@ -53,15 +53,18 @@ def create_filters(low_cut_freq: float, high_cut_freq: float, filter_order: int 
 def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
     """
     The signal should be of shape (input_length, 12).
-    If smaller, raise an exception. if bigger, cut the end.
+    Pad or truncate (in time or channels) if shorter or longer.
     """
-    if signal.shape[0] < input_length:
-        logger = setup_logger()
-        logger.debug(f'signal is not long enough. {signal.shape[0]=} < {input_length=}. Padding')
-        padded = np.zeros((input_length, 12))
-        padded[:signal.shape[0], :] = signal
-        return padded
-    return signal[:input_length, :]
+    if signal.ndim != 2:
+        raise ValueError(f"Expected signal with 2 dimensions (time, channels), got shape {signal.shape}")
+
+    orig_length, orig_channels = signal.shape
+    padded_signal = np.zeros((input_length, 12), dtype=signal.dtype)
+    length_to_copy = min(orig_length, input_length)
+    channels_to_copy = min(orig_channels, 12)
+    padded_signal[:length_to_copy, :channels_to_copy] = signal[:length_to_copy, :channels_to_copy]
+
+    return padded_signal
 
 
 def resample_signal(original_signal: np.ndarray, original_fs: int, new_fs: int):
@@ -81,9 +84,13 @@ def filter_signal(signal: np.ndarray, sos_filter) -> np.ndarray:
 
 
 def reorder_leads(signal: np.ndarray, signal_names: list[str]) -> np.ndarray:
-    lead_order = ['I', 'II', 'III', 'AVR', 'AVL', 'AVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
-    index_map = [signal_names.index(lead) for lead in lead_order]
-    return signal[:, index_map]
+    try:
+        lead_order = ['I', 'II', 'III', 'AVR', 'AVL', 'AVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+        index_map = [signal_names.index(lead) for lead in lead_order]
+        return signal[:, index_map]
+    except Exception:
+        logger.exception('Could not reorder leads. Leaving as it is. Error:')
+        return signal
 
 
 def apply_band_pass_filter(signal: np.ndarray, sos_filter) -> np.ndarray:
