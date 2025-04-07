@@ -2,12 +2,12 @@ import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
-from torch import Tensor, randn, Size, sigmoid
+from torch import Tensor, randn, Size, sigmoid, cat
 from torch.optim import AdamW, Optimizer
 
-from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
 from utils.logger import setup_logger, logger
+from utils.metrics import calculate_aggregate_metrics
 
 
 class Model(LightningModule):
@@ -16,46 +16,56 @@ class Model(LightningModule):
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
         self.our_logger = setup_logger()
+        self.accumulated_outputs: list[Tensor] = []
+        self.accumulated_labels: list[Tensor] = []
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
         rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
         self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {rank=}')
         inputs, targets = batch
-        loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
-    def validation_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        loss, metrics = self._run_batch(batch)
-        self.log('val_loss', loss, sync_dist=True)
-        val_metrics = {f'val_{key}': value for key, value in metrics.items()}
-        self.log_dict(val_metrics, on_epoch=True, prog_bar=True, sync_dist=True)
-        return loss
+    def _metrics_step(self, batch: list[Tensor], name: str) -> None:
+        _, outputs, targets = self._run_batch(batch, name)
+        self.accumulated_outputs.append(outputs.detach())
+        self.accumulated_labels.append(targets.detach())
 
-    def test_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        loss, metrics = self._run_batch(batch)
-        self.log('test_loss', loss, sync_dist=True)
-        test_metrics = {f'test_{key}': value for key, value in metrics.items()}
-        self.log_dict(test_metrics, on_epoch=True, prog_bar=True, sync_dist=True)
-        return loss
+    def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
+        self._metrics_step(batch, 'val')
 
-    def _run_batch(self, batch: list[Tensor], calculate_metrics: bool = True) -> tuple[Tensor, dict[str, Tensor]]:
+    def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
+        self._metrics_step(batch, 'test')
+
+    def _metrics_epoch_end(self, name: str) -> None:
+        y_pred = self._aggregate(self.accumulated_outputs)
+        self.accumulated_outputs.clear()
+        y = self._aggregate(self.accumulated_labels)
+        self.accumulated_labels.clear()
+
+        if self.trainer.global_rank == 0:
+            metrics = calculate_aggregate_metrics(y_pred, y, self.config.threshold)
+            metrics_dict = {f'{name}_{key}': value for key, value in metrics.items()}
+            self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+
+    def on_validation_epoch_end(self) -> None:
+        self._metrics_epoch_end('val')
+
+    def on_test_epoch_end(self) -> None:
+        self._metrics_epoch_end('test')
+
+    def _aggregate(self, accumulated: list[Tensor]) -> Tensor:
+        aggregated = cat(accumulated, dim=0)
+        aggregated = self.all_gather(aggregated)
+        new_batch_size = self.trainer.world_size * aggregated.shape[0]
+        return aggregated.view(new_batch_size, *aggregated.shape[1:])
+
+    def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch
         outputs = self(inputs)
-
-        metrics = self._calculate_metrics(outputs.clone(), targets.clone()) if calculate_metrics else {}
-        return self.criterion(outputs, targets), metrics
-
-    def _calculate_metrics(self, y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
-        labels = y.detach().cpu().float().numpy()
-        prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
-        binary_outputs = (prob_outputs > self.config.threshold).astype(int)
-        challenge_score = compute_challenge_score(labels, prob_outputs)
-        auroc, auprc = compute_auc(labels, prob_outputs)
-        accuracy = compute_accuracy(labels, binary_outputs)
-        f_measure = compute_f_measure(labels, binary_outputs)
-        return {'challenge_score': challenge_score, 'auroc': auroc, 'auprc': auprc, 'accuracy': accuracy,
-                'f_measure': f_measure}
+        loss = self.criterion(outputs, targets)
+        self.log(f'{name}_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        return loss, outputs, targets
 
     def configure_optimizers(self) -> Optimizer:
         return AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
