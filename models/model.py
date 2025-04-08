@@ -26,6 +26,9 @@ class Model(LightningModule):
 
     def _metrics_step(self, batch: list[Tensor], name: str) -> None:
         self.our_logger.debug(f'{name} step {batch[0].shape=}')
+        if self.trainer.global_rank != 0:
+            return
+
         _, outputs, targets = self._run_batch(batch, name)
         self.accumulated_outputs.append(outputs.detach())
         self.accumulated_labels.append(targets.detach())
@@ -37,31 +40,25 @@ class Model(LightningModule):
         self._metrics_step(batch, 'test')
 
     def _metrics_epoch_end(self, name: str) -> None:
-        logger.debug(f'_metrics_epoch_end')
-        y_pred = self._aggregate(self.accumulated_outputs)
+        self.our_logger.debug(f'start _metrics_epoch_end')
+        if self.trainer.global_rank != 0:
+            return
+
+        y_pred = cat(self.accumulated_outputs, dim=0)
+        y = cat(self.accumulated_labels, dim=0)
         self.accumulated_outputs.clear()
-        y = self._aggregate(self.accumulated_labels)
         self.accumulated_labels.clear()
 
-        if self.trainer.global_rank == 0:
-            metrics = calculate_aggregate_metrics(y_pred, y, self.config.threshold)
-            metrics_dict = {f'{name}_{key}': value for key, value in metrics.items()}
-            self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-            logger.debug('Logged metrics')
-        logger.debug('end _metrics_epoch_end')
+        metrics = calculate_aggregate_metrics(y_pred, y, self.config.threshold)
+        metrics_dict = {f'{name}_{key}': value for key, value in metrics.items()}
+        self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.our_logger.debug('end _metrics_epoch_end')
 
     def on_validation_epoch_end(self) -> None:
         self._metrics_epoch_end('val')
 
     def on_test_epoch_end(self) -> None:
         self._metrics_epoch_end('test')
-
-    def _aggregate(self, accumulated: list[Tensor]) -> Tensor | None:
-        aggregated = cat(accumulated, dim=0)
-        aggregated = self.all_gather(aggregated)
-        if self.trainer.global_rank == 0:
-            return aggregated.view(-1, 1)
-        return None
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch

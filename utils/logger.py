@@ -30,8 +30,9 @@ def setup_logger():
     logger.setLevel(logging.DEBUG if should_log() else logging.CRITICAL)
     logger.propagate = False
 
-    rank_prefix = f'[rank {rank}]' if dist.is_initialized() else 'pre-dist'
-    formatter = logging.Formatter(f'%(rank)s %(asctime)s - %(name)s - %(levelname)s - %(message)s', defaults={'rank': rank_prefix})
+    rank_prefix = rank if dist.is_initialized() else 'pre-dist'
+    formatter = logging.Formatter(f'%(rank)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                                  defaults={'rank': rank_prefix})
 
     debug_handler = get_file_handler(logging.DEBUG, formatter, rank)
     info_file_handler = get_file_handler(logging.INFO, formatter, rank)
