@@ -1,4 +1,3 @@
-import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
@@ -20,13 +19,13 @@ class Model(LightningModule):
         self.accumulated_labels: list[Tensor] = []
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
-        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {rank=}')
+        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
         inputs, targets = batch
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
     def _metrics_step(self, batch: list[Tensor], name: str) -> None:
+        self.our_logger.debug(f'{name} step {batch[0].shape=}')
         _, outputs, targets = self._run_batch(batch, name)
         self.accumulated_outputs.append(outputs.detach())
         self.accumulated_labels.append(targets.detach())
@@ -38,6 +37,7 @@ class Model(LightningModule):
         self._metrics_step(batch, 'test')
 
     def _metrics_epoch_end(self, name: str) -> None:
+        logger.debug(f'_metrics_epoch_end')
         y_pred = self._aggregate(self.accumulated_outputs)
         self.accumulated_outputs.clear()
         y = self._aggregate(self.accumulated_labels)
@@ -47,6 +47,8 @@ class Model(LightningModule):
             metrics = calculate_aggregate_metrics(y_pred, y, self.config.threshold)
             metrics_dict = {f'{name}_{key}': value for key, value in metrics.items()}
             self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            logger.debug('Logged metrics')
+        logger.debug('end _metrics_epoch_end')
 
     def on_validation_epoch_end(self) -> None:
         self._metrics_epoch_end('val')
