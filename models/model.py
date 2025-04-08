@@ -51,7 +51,7 @@ class Model(LightningModule):
 
         metrics = calculate_aggregate_metrics(y_pred, y, self.config.threshold)
         metrics_dict = {f'{name}_{key}': value for key, value in metrics.items()}
-        self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log_dict(metrics_dict, on_step=False, on_epoch=True, prog_bar=True, sync_dist=False)
         self.our_logger.debug('end _metrics_epoch_end')
 
     def on_validation_epoch_end(self) -> None:
@@ -80,7 +80,7 @@ class Model(LightningModule):
         batch_size = 7
         from settings import Config
         config = Config()
-        x = randn(batch_size, config.model.input_channels, config.data_loader.input_length)
+        x = randn(batch_size, config.model.input_channels, config.data.input_length)
         model = cls(config.model)
         logger.info(str(model))
         logger.info(summarize(model))
