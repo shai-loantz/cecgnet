@@ -60,8 +60,7 @@ class Model(LightningModule):
         aggregated = cat(accumulated, dim=0)
         aggregated = self.all_gather(aggregated)
         if self.trainer.global_rank == 0:
-            new_batch_size = self.trainer.world_size * aggregated.shape[0]
-            return aggregated.view(new_batch_size, *aggregated.shape[1:])
+            return aggregated.view(-1, 1)
         return None
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
