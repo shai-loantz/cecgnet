@@ -8,7 +8,7 @@ from settings import Attention
 
 def get_attention_layers(layer_conf: LayerConf, attention_type: Attention,
                          base_channels: int = BASE_CHANNELS) -> nn.ModuleList:
-    attention_class = ATTENTION.get(attention_type)
+    attention_class = ATTENTION[attention_type]
     layers = nn.ModuleList()
     in_channels = base_channels
     for layer_size in layer_conf.value:
