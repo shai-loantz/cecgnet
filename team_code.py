@@ -46,6 +46,8 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     logger.debug('Extracting features')
     features = extract_features(record, config.data_loader.input_length, config.pre_process, training=False)
 
+    device = next(model.parameters()).device
+    features = features.to(device)
     logger.info('Predicting')
     with torch.no_grad():
         logit = model(features.unsqueeze(0)).detach().squeeze()
