@@ -15,8 +15,7 @@ def train_model():
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
-        params = config.get_trainer_params()
-        run_train(model, params, config.pre_process, config.pre_loader)
+        run_train(model, config)
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False
@@ -25,8 +24,7 @@ def train_model():
     else:  # load from pretrained model
         model = load_model(config.pretraining_checkpoint_path)
     logger.info('Fine-tuning')
-    params = config.get_trainer_params()
-    run_train(model, params, config.pre_process, config.data_loader)
+    run_train(model, config)
     logger.info('Training completed.')
     return model
 

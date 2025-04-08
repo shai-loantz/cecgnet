@@ -38,7 +38,7 @@ class LightningAccelerator(str, Enum):
     CPU = 'cpu'
 
 
-class DataLoaderConfig(BaseConfig):
+class DataConfig(BaseConfig):
     batch_size: int
     num_workers: int
     pin_memory: bool = True
@@ -49,8 +49,7 @@ class DataLoaderConfig(BaseConfig):
     data_folder: Optional[str] = None
 
     def get_data_loader_config(self) -> dict:
-        data_loader_config = self.model_dump(exclude={"input_length", "validation_size", "data_folder"})
-        return data_loader_config
+        return self.model_dump(exclude={"input_length", "validation_size", "data_folder"})
 
 
 class PreprocessConfig(BaseModel):
@@ -91,7 +90,7 @@ class PreTrainConfig(BaseModel):
 class Config(BaseSettings):
     lightning: LightningConfig
     trainer: TrainerConfig
-    data_loader: DataLoaderConfig
+    data: DataConfig
     pre_process: PreprocessConfig
     model: ModelConfig
     model_folder: str = 'lightning_logs'
@@ -103,7 +102,7 @@ class Config(BaseSettings):
 
     pre_trainer: Optional[TrainerConfig] = None
     pre_model: Optional[ModelConfig] = None
-    pre_loader: Optional[DataLoaderConfig] = None
+    pre_loader: Optional[DataConfig] = None
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
@@ -120,7 +119,7 @@ class Config(BaseSettings):
             pre_vars = self.pre_trainer_config.model_dump()
             # makes copies of the normal settings only changing the relevant parameters
             self.pre_model = self.model.copy_with_override(**pre_vars)
-            self.pre_loader = self.data_loader.copy_with_override(**pre_vars)
+            self.pre_loader = self.data.copy_with_override(**pre_vars)
             self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
 
     def get_predictor_params(self) -> dict:
@@ -151,5 +150,5 @@ class Config(BaseSettings):
         return f'pretraining_{name}' if self.pretraining else name
 
     def update_settings(self, data_folder: str, model_folder: str):
-        self.data_loader.data_folder = data_folder
+        self.data.data_folder = data_folder
         self.model_folder = model_folder

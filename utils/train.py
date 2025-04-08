@@ -1,15 +1,15 @@
 from lightning import Trainer
 
-from data_tools.data_loader import get_data_loaders
+from data_tools.data_module import DataModule
 from models import Model
-from settings import DataLoaderConfig, PreprocessConfig
+from settings import Config
 from utils.logger import logger
 
 
-def run_train(model: Model, trainer_params: dict, preprocess: PreprocessConfig,
-              loader: DataLoaderConfig) -> None:
-    logger.info('Finding training data')
-    train_loader, val_loader = get_data_loaders(loader, preprocess)
+def run_train(model: Model, config: Config, use_wandb: bool = True) -> None:
+    params = config.get_trainer_params(use_wandb)
+    trainer = Trainer(**params)
+    logger.info('Creating data module')
+    data_module = DataModule(config.data, config.pre_process)
     logger.info('Training')
-    trainer = Trainer(**trainer_params)
-    trainer.fit(model, train_loader, val_loader)
+    trainer.fit(model, datamodule=data_module)
