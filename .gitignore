@@ -181,3 +181,4 @@ outputs/
 checkpoints/
 wandb/
 logs/
+current_run.txt
