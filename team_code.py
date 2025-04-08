@@ -48,7 +48,7 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
 
     device = next(model.parameters()).device
     features = features.to(device)
-    logger.info('Predicting')
+    logger.debug('Predicting')
     with torch.no_grad():
         logit = model(features.unsqueeze(0)).detach().squeeze()
 
