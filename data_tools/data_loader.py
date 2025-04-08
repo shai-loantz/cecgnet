@@ -4,6 +4,7 @@ from torch.utils.data.distributed import DistributedSampler
 
 from data_tools.data_set import ECGDataset
 from settings import DataLoaderConfig, PreprocessConfig
+from utils.ddp import is_main_proc
 from utils.logger import logger
 
 
@@ -11,9 +12,11 @@ def create_data_loaders(train_dataset: ECGDataset, val_dataset: ECGDataset,
                         data_loader_config: dict) -> tuple[DataLoader, DataLoader | None]:
     train_sampler = _get_train_sampler(train_dataset)
     train_loader = DataLoader(train_dataset, shuffle=(train_sampler is None), sampler=train_sampler, **data_loader_config)
-    if dist.is_initialized() and dist.get_rank() != 0:
+    if not is_main_proc:
+        logger.info('Validation would not run in this rank')
         val_loader = None
     else:
+        logger.info('Creating validation loader')
         val_loader = DataLoader(val_dataset, shuffle=False, **data_loader_config)
     logger.info(f'Train: {len(train_dataset)}, Val: {len(val_dataset)}')
     return train_loader, val_loader
