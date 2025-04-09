@@ -142,7 +142,6 @@ class Config(BaseSettings):
             params.update(self.pre_trainer.model_dump())
         else:
             params.update(self.trainer.model_dump())
-        params['limit_val_batches'] = 1.0 if is_main_proc() else 0.0
 
         return params
 
