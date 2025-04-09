@@ -71,6 +71,8 @@ def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
     epochs: list[tuple[list[float], list[float]]] = []
     for file_name in glob(os.path.join(OUTPUTS_DIR, f'outputs_*.json')):
         rank_epochs = _get_current_outputs(file_name)
+        os.remove(file_name)
+
         if first:
             epochs = rank_epochs
         else:
@@ -87,7 +89,6 @@ def _get_current_outputs(file_name: str) -> list[tuple[list[float], list[float]]
         with open(file_name, 'r') as fh:
             epochs = json.load(fh)
 
-    os.remove(file_name)
     return epochs
 
 
