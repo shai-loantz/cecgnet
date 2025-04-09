@@ -1,16 +1,19 @@
 import secrets
 
+from lightning import Trainer
+
 from models import MODELS
 from settings import Config
 from utils.ddp import is_main_proc
 from utils.logger import logger
+from utils.metrics import calculate_metrics_per_epoch
 from utils.train import run_train
 
 config = Config()
 RUN_POSTFIX = secrets.token_hex(2)
 
 
-def train_model():
+def main():
     restart_wandb_run()
     if config.pretraining:
         logger.info('Pre-training')
@@ -24,9 +27,17 @@ def train_model():
     else:  # load from pretrained model
         model = load_model(config.pretraining_checkpoint_path)
     logger.info('Fine-tuning')
-    run_train(model, config)
-    logger.info('Training completed.')
+    trainer = run_train(model, config)
+    logger.info('Training completed. Evaluating')
+    log_metrics(trainer)
     return model
+
+
+def log_metrics(trainer: Trainer) -> None:
+    metrics = calculate_metrics_per_epoch()
+    for metric_name, values in metrics.items():
+        for epoch, value in enumerate(values):
+            trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
 
 
 def restart_wandb_run():
@@ -46,6 +57,6 @@ if __name__ == '__main__':
     import wandb
 
     try:
-        train_model()
+        main()
     finally:
         wandb.finish()

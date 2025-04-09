@@ -69,7 +69,6 @@ class LightningConfig(BaseModel):
     devices: str = "auto"
     precision: str = "bf16-mixed"
     num_nodes: int = 1
-    use_distributed_sampler: bool = False
 
 
 class ModelConfig(BaseConfig):

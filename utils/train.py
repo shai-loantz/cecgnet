@@ -6,10 +6,11 @@ from settings import Config
 from utils.logger import logger
 
 
-def run_train(model: Model, config: Config, use_wandb: bool = True) -> None:
+def run_train(model: Model, config: Config, use_wandb: bool = True) -> Trainer:
     params = config.get_trainer_params(use_wandb)
     trainer = Trainer(**params)
     logger.info('Creating data module')
     data_module = DataModule(config.data, config.pre_process)
     logger.info('Training')
     trainer.fit(model, datamodule=data_module)
+    return trainer
