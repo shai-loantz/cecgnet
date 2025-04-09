@@ -87,6 +87,7 @@ def _get_current_outputs(file_name: str) -> list[tuple[list[float], list[float]]
         with open(file_name, 'r') as fh:
             epochs = json.load(fh)
 
+    os.remove(file_name)
     return epochs
 
 
