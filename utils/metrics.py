@@ -4,12 +4,13 @@ from glob import glob
 
 import numpy as np
 from torch import Tensor
+from wandb.env import RUN_ID
 
 from helper_code import compute_auc, compute_challenge_score, compute_accuracy, compute_f_measure
 from settings import Config
 from utils.logger import logger
 
-OUTPUTS_DIR = '../outputs'
+OUTPUTS_DIR = 'outputs'
 METRIC_NAMES = {'challenge_score', 'auroc', 'auprc', 'accuracy', 'f_measure'}
 
 
@@ -24,7 +25,7 @@ def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
     y_list = y.view(-1).cpu().tolist()
     y_pred_list = y_pred.view(-1).cpu().tolist()
 
-    file_name = os.path.join(OUTPUTS_DIR, f'outputs_{rank}.json')
+    file_name = os.path.join(OUTPUTS_DIR, f'{RUN_ID}_{rank}.json')
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
     epochs = _get_current_outputs(file_name)
 
