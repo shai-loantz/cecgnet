@@ -14,7 +14,12 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss()
-        self.our_logger = setup_logger()
+        self.our_logger = None
+
+    def setup(self, stage=None):
+        if self.our_logger is None:
+            self.our_logger = setup_logger()
+            self.our_logger.info(f"Logger initialized in setup() on rank {self.global_rank}")
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
         self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
