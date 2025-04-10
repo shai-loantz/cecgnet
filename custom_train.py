@@ -4,7 +4,7 @@ from lightning import Trainer
 
 from models import MODELS
 from settings import Config
-from utils.ddp import is_main_proc
+from utils.ddp import is_main_proc, set_run_id, get_run_id
 from utils.logger import logger
 from utils.metrics import calculate_metrics_per_epoch
 from utils.train import run_train
@@ -36,7 +36,7 @@ def main():
 
 
 def log_metrics(trainer: Trainer) -> None:
-    metrics = calculate_metrics_per_epoch()
+    metrics = calculate_metrics_per_epoch(get_run_id())
     for metric_name, values in metrics.items():
         for epoch, value in enumerate(values):
             trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
@@ -47,6 +47,7 @@ def restart_wandb_run():
         run_name = f'{config.get_checkpoint_name()}_{RUN_POSTFIX}'
         wandb.finish()
         wandb.init(name=run_name, reinit=True)
+        set_run_id(wandb.run.id)
 
 
 def load_model(checkpoint_path: str):

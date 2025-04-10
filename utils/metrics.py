@@ -4,7 +4,6 @@ from glob import glob
 
 import numpy as np
 from torch import Tensor
-import wandb
 
 from helper_code import compute_auc, compute_challenge_score, compute_accuracy, compute_f_measure
 from settings import Config
@@ -14,7 +13,7 @@ OUTPUTS_DIR = 'outputs'
 METRIC_NAMES = {'challenge_score', 'auroc', 'auprc', 'accuracy', 'f_measure'}
 
 
-def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
+def write_outputs(rank: int, epoch: int, run_id: str, y_pred: Tensor, y: Tensor) -> None:
     """
     output file is a json of a list[tuple[list[float], list[float]]].
     The structure is - list of epochs,
@@ -25,7 +24,7 @@ def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
     y_list = y.view(-1).cpu().tolist()
     y_pred_list = y_pred.view(-1).cpu().tolist()
 
-    file_name = os.path.join(OUTPUTS_DIR, f'{wandb.run.id}_{rank}.json')
+    file_name = os.path.join(OUTPUTS_DIR, f'{run_id}_{rank}.json')
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
     epochs = _get_current_outputs(file_name)
 
@@ -42,9 +41,9 @@ def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
     logger.debug('Done writing outputs to file')
 
 
-def calculate_metrics_per_epoch() -> dict[str, list[float]]:
+def calculate_metrics_per_epoch(run_id: str) -> dict[str, list[float]]:
     logger.info('Aggregating outputs')
-    epochs = _aggregate_outputs()
+    epochs = _aggregate_outputs(run_id)
 
     metrics: dict[str, list[float]] = {}
     for metric_name in METRIC_NAMES:
@@ -72,10 +71,10 @@ def _calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float)
             'auprc': auprc, 'accuracy': accuracy, 'f_measure': f_measure}
 
 
-def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
+def _aggregate_outputs(run_id: str) -> list[tuple[list[float], list[float]]]:
     first = True
     epochs: list[tuple[list[float], list[float]]] = []
-    output_file_names = glob(os.path.join(OUTPUTS_DIR, f'{wandb.run.id}_*.json'))
+    output_file_names = glob(os.path.join(OUTPUTS_DIR, f'{run_id}_*.json'))
     logger.debug(f'Found {len(output_file_names)} output files')
     for file_name in output_file_names:
         rank_epochs = _get_current_outputs(file_name)
@@ -102,4 +101,4 @@ def _get_current_outputs(file_name: str) -> list[tuple[list[float], list[float]]
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
-    return 1.0/(1.0 + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-x))
