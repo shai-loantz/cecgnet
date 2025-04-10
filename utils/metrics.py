@@ -4,7 +4,7 @@ from glob import glob
 
 import numpy as np
 from torch import Tensor
-from wandb.env import RUN_ID
+import wandb
 
 from helper_code import compute_auc, compute_challenge_score, compute_accuracy, compute_f_measure
 from settings import Config
@@ -25,7 +25,7 @@ def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
     y_list = y.view(-1).cpu().tolist()
     y_pred_list = y_pred.view(-1).cpu().tolist()
 
-    file_name = os.path.join(OUTPUTS_DIR, f'{RUN_ID}_{rank}.json')
+    file_name = os.path.join(OUTPUTS_DIR, f'{wandb.run.id}_{rank}.json')
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
     epochs = _get_current_outputs(file_name)
 
@@ -75,7 +75,7 @@ def _calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float)
 def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
     first = True
     epochs: list[tuple[list[float], list[float]]] = []
-    output_file_names = glob(os.path.join(OUTPUTS_DIR, f'outputs_*.json'))
+    output_file_names = glob(os.path.join(OUTPUTS_DIR, f'{wandb.run.id}_*.json'))
     logger.debug(f'Found {len(output_file_names)} output files')
     for file_name in output_file_names:
         rank_epochs = _get_current_outputs(file_name)
