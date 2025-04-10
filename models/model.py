@@ -25,7 +25,8 @@ class Model(LightningModule):
     def _metrics_step(self, batch: list[Tensor], name: str) -> None:
         self.our_logger.debug(f'{name} step {batch[0].shape=}')
         _, outputs, targets = self._run_batch(batch, name)
-        write_outputs(self.trainer.global_rank, self.current_epoch, outputs, targets)
+        if not self.trainer.sanity_checking:
+            write_outputs(self.trainer.global_rank, self.current_epoch, outputs, targets)
 
     def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
         self._metrics_step(batch, 'val')

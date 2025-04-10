@@ -66,8 +66,8 @@ def _calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float)
     binary_outputs = (prob_outputs > threshold).astype(int)
     challenge_score = compute_challenge_score(labels, prob_outputs)
     auroc, auprc = compute_auc(labels, prob_outputs)
-    accuracy = compute_accuracy(labels, binary_outputs)
-    f_measure = compute_f_measure(labels, binary_outputs)
+    accuracy = compute_accuracy(labels.astype(int), binary_outputs)
+    f_measure = compute_f_measure(labels.astype(int), binary_outputs)
     return {'challenge_score': challenge_score, 'auroc': auroc,
             'auprc': auprc, 'accuracy': accuracy, 'f_measure': f_measure}
 

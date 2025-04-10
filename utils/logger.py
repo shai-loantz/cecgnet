@@ -72,6 +72,7 @@ def setup_logger():
         lib_logger.setLevel(logging.INFO)
         lib_logger.propagate = False  # Prevent duplicate logs
 
+    logger.debug('Logger initialized')
     return logger
 
 
