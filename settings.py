@@ -101,7 +101,7 @@ class Config(BaseSettings):
 
     pre_trainer: Optional[TrainerConfig] = None
     pre_model: Optional[ModelConfig] = None
-    pre_loader: Optional[DataConfig] = None
+    pre_data: Optional[DataConfig] = None
 
     model_name: ModelName = ModelName.SIMPLE
     checkpoint_name: Optional[str] = None
@@ -118,7 +118,7 @@ class Config(BaseSettings):
             pre_vars = self.pre_trainer_config.model_dump()
             # makes copies of the normal settings only changing the relevant parameters
             self.pre_model = self.model.copy_with_override(**pre_vars)
-            self.pre_loader = self.data.copy_with_override(**pre_vars)
+            self.pre_data = self.data.copy_with_override(**pre_vars)
             self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
 
     def get_predictor_params(self) -> dict:

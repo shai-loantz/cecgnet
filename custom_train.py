@@ -18,7 +18,7 @@ def main():
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
-        trainer = run_train(model, config)
+        trainer = run_train(model, config, use_pretraining=True)
         logger.info('Pre-training completed. Evaluating')
         log_metrics(trainer)
 
