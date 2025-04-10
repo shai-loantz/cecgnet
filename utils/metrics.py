@@ -75,6 +75,7 @@ def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
 
         if first:
             epochs = rank_epochs
+            first = False
         else:
             for epoch, outputs in enumerate(rank_epochs):
                 epochs[epoch][0].extend(outputs[0])
