@@ -5,9 +5,9 @@ from torch import Tensor, randn, Size, sigmoid
 from torch.optim import AdamW, Optimizer
 
 from settings import ModelConfig
-from utils.ddp import get_run_id
 from utils.logger import setup_logger, logger
 from utils.metrics import write_outputs
+from utils.run_id import get_run_id
 
 
 class Model(LightningModule):

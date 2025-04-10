@@ -4,9 +4,10 @@ from lightning import Trainer
 
 from models import MODELS
 from settings import Config
-from utils.ddp import is_main_proc, set_run_id, get_run_id
+from utils.ddp import is_main_proc
 from utils.logger import logger
 from utils.metrics import calculate_metrics_per_epoch
+from utils.run_id import set_run_id, get_run_id
 from utils.train import run_train
 
 config = Config()
