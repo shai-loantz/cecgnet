@@ -78,8 +78,6 @@ def _aggregate_outputs(run_id: str) -> list[tuple[list[float], list[float]]]:
     logger.debug(f'Found {len(output_file_names)} output files')
     for file_name in output_file_names:
         rank_epochs = _get_current_outputs(file_name)
-        os.remove(file_name)
-        logger.debug(f'Removed {file_name}')
 
         if first:
             epochs = rank_epochs

@@ -37,10 +37,11 @@ def main():
 
 
 def log_metrics(trainer: Trainer) -> None:
-    metrics = calculate_metrics_per_epoch(get_run_id())
-    for metric_name, values in metrics.items():
-        for epoch, value in enumerate(values):
-            trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
+    if is_main_proc():
+        metrics = calculate_metrics_per_epoch(get_run_id())
+        for metric_name, values in metrics.items():
+            for epoch, value in enumerate(values):
+                trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
 
 
 def restart_wandb_run():
