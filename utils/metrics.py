@@ -20,20 +20,25 @@ def write_outputs(rank: int, epoch: int, y_pred: Tensor, y: Tensor) -> None:
                        for each epoch, we have a tuple where:
                        the first element is a list of y and the second is a list of y_pred
     """
+    logger.debug(f'Writing outputs to file, {rank=}')
     y_list = y.view(-1).cpu().tolist()
     y_pred_list = y_pred.view(-1).cpu().tolist()
 
     file_name = os.path.join(OUTPUTS_DIR, f'outputs_{rank}.json')
+    os.makedirs(OUTPUTS_DIR, exist_ok=True)
     epochs = _get_current_outputs(file_name)
 
     if len(epochs) == epoch + 1:
+        logger.debug('Extending output file')
         epochs[epoch][0].extend(y_list)
         epochs[epoch][1].extend(y_pred_list)
     else:
+        logger.debug('Creating a new output file')
         epochs.append((y_list, y_pred_list))
 
     with open(file_name, 'w') as fh:
         json.dump(epochs, fh)
+    logger.debug('Done writing outputs to file')
 
 
 def calculate_metrics_per_epoch() -> dict[str, list[float]]:
@@ -69,9 +74,12 @@ def _calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float)
 def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
     first = True
     epochs: list[tuple[list[float], list[float]]] = []
-    for file_name in glob(os.path.join(OUTPUTS_DIR, f'outputs_*.json')):
+    output_file_names = glob(os.path.join(OUTPUTS_DIR, f'outputs_*.json'))
+    logger.debug(f'Found {len(output_file_names)} output files')
+    for file_name in output_file_names:
         rank_epochs = _get_current_outputs(file_name)
         os.remove(file_name)
+        logger.debug(f'Removed {file_name}')
 
         if first:
             epochs = rank_epochs
@@ -85,7 +93,6 @@ def _aggregate_outputs() -> list[tuple[list[float], list[float]]]:
 
 def _get_current_outputs(file_name: str) -> list[tuple[list[float], list[float]]]:
     epochs: list[tuple[list[float], list[float]]] = []
-    os.makedirs(OUTPUTS_DIR, exist_ok=True)
     if os.path.isfile(file_name):
         with open(file_name, 'r') as fh:
             epochs = json.load(fh)
