@@ -364,8 +364,6 @@ def compute_accuracy(labels, outputs):
 def compute_f_measure(labels, outputs):
     # Compute the confusion matrix.
     A = compute_confusion_matrix(labels, outputs)
-    print('~~~~~F Measure A:~~~~~~')  # TODO: Remove!
-    print(A)
 
     tp, fp, fn, tn = A[0, 0], A[0, 1], A[1, 0], A[1, 1]
     if 2 * tp + fp + fn > 0:
