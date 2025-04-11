@@ -26,6 +26,7 @@ class Attention(str, Enum):
 class ModelName(str, Enum):
     SIMPLE = 'simple'
     RESNET_ATTENTION = 'resnet_attention'
+    VGG = 'vgg'
 
 
 class LightningStrategy(str, Enum):
