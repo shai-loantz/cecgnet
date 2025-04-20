@@ -1,3 +1,7 @@
+import random
+
+import numpy as np
+import torch
 from lightning import LightningDataModule
 from torch.utils.data import random_split, DataLoader
 
@@ -19,7 +23,15 @@ class DataModule(LightningDataModule):
         self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, **self.data_loader_config)
+        return DataLoader(self.train_dataset, shuffle=True,
+                          worker_init_fn=seed_worker, **self.data_loader_config)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False, **self.data_loader_config)
+        return DataLoader(self.val_dataset, shuffle=False,
+                          worker_init_fn=seed_worker, **self.data_loader_config)
+
+
+def seed_worker(worker_id: int) -> None:
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)

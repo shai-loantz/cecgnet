@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import torch
+from lightning import seed_everything
 
 from data_tools.data_set import extract_features
 from models import Model, MODELS
@@ -18,6 +19,7 @@ from utils.train import run_train
 #
 ################################################################################
 
+seed_everything(42)
 config = Config()
 
 

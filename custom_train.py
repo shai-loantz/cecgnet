@@ -1,5 +1,7 @@
 import secrets
 
+from lightning import seed_everything
+
 from models import MODELS
 from settings import Config
 from utils.ddp import is_main_proc
@@ -7,6 +9,7 @@ from utils.logger import logger
 from utils.run_id import set_run_id
 from utils.train import run_train
 
+seed_everything(42)
 config = Config()
 RUN_POSTFIX = secrets.token_hex(2)
 
