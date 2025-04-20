@@ -64,12 +64,15 @@ class Model(LightningModule):
         """ used for changing pretraining to post training """
         self.config = config  # will also update optimizers when fit is called
 
-    def _get_loss_weights(self) -> Tensor:
+    def _get_loss_weights(self) -> Tensor | None:
         """
-        (1 -p)/p is negative_count/positive_count, and it computes the weight of the positive loss
+        (1 -p)/p is negative_count/positive_count, and it computes the wanted weight for the positive samples.
+        None means equal weight for positive and negative (normal loss).
         """
-        p = self.config.positive_prevalence
-        return tensor([(1 - p) / p])
+        if self.config.use_weighted_loss:
+            p = self.config.positive_prevalence
+            return tensor([(1 - p) / p])
+        return None
 
     @classmethod
     def test_model(cls) -> None:
