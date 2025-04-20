@@ -41,16 +41,13 @@ def write_outputs(rank: int, epoch: int, run_id: str, y_pred: Tensor, y: Tensor)
     logger.debug('Done writing outputs to file')
 
 
-def calculate_metrics_per_epoch(run_id: str) -> dict[str, list[float]]:
+def calculate_metrics_per_epoch(run_id: str, threshold: float) -> dict[str, list[float]]:
     logger.info('Aggregating outputs')
     epochs = _aggregate_outputs(run_id)
 
     metrics: dict[str, list[float]] = {}
     for metric_name in METRIC_NAMES:
         metrics[metric_name] = []
-
-    config = Config()
-    threshold = config.model.threshold
 
     for epoch in epochs:
         epoch_metrics = _calculate_metrics(np.array(epoch[0]), np.array(epoch[1]), threshold)
