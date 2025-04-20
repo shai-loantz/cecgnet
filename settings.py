@@ -77,7 +77,7 @@ class ModelConfig(BaseConfig):
     weight_decay: float
     input_channels: int
     threshold: float
-    weighted_loss: bool = True
+    use_weighted_loss: bool = True
     positive_prevalence: float
 
     attention: Attention = Attention.SelfAttention
