@@ -2,7 +2,7 @@ import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
-from torch import Tensor, randn, Size, sigmoid
+from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW, Optimizer
 
 from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
@@ -14,7 +14,7 @@ class Model(LightningModule):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.config = config
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = setup_logger()
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
@@ -64,6 +64,13 @@ class Model(LightningModule):
         """ used for changing pretraining to post training """
         self.config = config  # will also update optimizers when fit is called
 
+    def _get_loss_weights(self) -> Tensor:
+        """
+        (1 -p)/p is negative_count/positive_count, and it computes the weight of the positive loss
+        """
+        p = self.config.positive_prevalence
+        return tensor([(1 - p) / p])
+
     @classmethod
     def test_model(cls) -> None:
         """Use this just to see the model structure has no errors"""
@@ -78,4 +85,4 @@ class Model(LightningModule):
         assert logits.size() == Size([batch_size])
         probs = sigmoid(logits)
         logger.info(probs)
-        logger.info((probs > config.threshold).int())
+        logger.info((probs > config.model.threshold).int())
