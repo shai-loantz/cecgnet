@@ -1,7 +1,7 @@
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
-from torch import Tensor, randn, Size, sigmoid
+from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW, Optimizer
 
 from settings import ModelConfig
@@ -14,7 +14,7 @@ class Model(LightningModule):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         self.config = config
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
 
     def setup(self, stage=None):
@@ -53,6 +53,16 @@ class Model(LightningModule):
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """
         self.config = config  # will also update optimizers when fit is called
+
+    def _get_loss_weights(self) -> Tensor | None:
+        """
+        (1 -p)/p is negative_count/positive_count, and it computes the wanted weight for the positive samples.
+        None means equal weight for positive and negative (normal loss).
+        """
+        if self.config.use_weighted_loss:
+            p = self.config.positive_prevalence
+            return tensor([(1 - p) / p])
+        return None
 
     @classmethod
     def test_model(cls) -> None:
