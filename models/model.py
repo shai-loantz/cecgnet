@@ -1,13 +1,13 @@
-import torch.distributed as dist
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
 from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW, Optimizer
 
-from helper_code import compute_challenge_score, compute_auc, compute_accuracy, compute_f_measure
 from settings import ModelConfig
 from utils.logger import setup_logger, logger
+from utils.metrics import write_outputs
+from utils.run_id import get_run_id
 
 
 class Model(LightningModule):
@@ -15,47 +15,37 @@ class Model(LightningModule):
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
-        self.our_logger = setup_logger()
+        self.our_logger = None
+
+    def setup(self, stage=None):
+        if self.our_logger is None:
+            self.our_logger = setup_logger()
+            self.our_logger.info(f"Logger initialized in setup() on rank {self.global_rank}")
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        rank = dist.get_rank() if dist.is_initialized() else 0  # Get GPU rank
-        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}, {rank=}')
+        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
         inputs, targets = batch
-        loss, _ = self._run_batch([inputs, targets], calculate_metrics=False)
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
-    def validation_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        loss, metrics = self._run_batch(batch)
-        self.log('val_loss', loss, sync_dist=True)
-        val_metrics = {f'val_{key}': value for key, value in metrics.items()}
-        self.log_dict(val_metrics, on_epoch=True, prog_bar=True, sync_dist=True)
-        return loss
+    def _metrics_step(self, batch: list[Tensor], name: str) -> None:
+        self.our_logger.debug(f'{name} step {batch[0].shape=}')
+        _, outputs, targets = self._run_batch(batch, name)
+        if not self.trainer.sanity_checking:
+            write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
 
-    def test_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        loss, metrics = self._run_batch(batch)
-        self.log('test_loss', loss, sync_dist=True)
-        test_metrics = {f'test_{key}': value for key, value in metrics.items()}
-        self.log_dict(test_metrics, on_epoch=True, prog_bar=True, sync_dist=True)
-        return loss
+    def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
+        self._metrics_step(batch, 'val')
 
-    def _run_batch(self, batch: list[Tensor], calculate_metrics: bool = True) -> tuple[Tensor, dict[str, Tensor]]:
+    def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
+        self._metrics_step(batch, 'test')
+
+    def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch
         outputs = self(inputs)
-
-        metrics = self._calculate_metrics(outputs.clone(), targets.clone()) if calculate_metrics else {}
-        return self.criterion(outputs, targets), metrics
-
-    def _calculate_metrics(self, y_pred: Tensor, y: Tensor) -> dict[str, Tensor]:
-        labels = y.detach().cpu().float().numpy()
-        prob_outputs = sigmoid(y_pred.detach()).cpu().float().numpy()
-        binary_outputs = (prob_outputs > self.config.threshold).astype(int)
-        challenge_score = compute_challenge_score(labels, prob_outputs)
-        auroc, auprc = compute_auc(labels, prob_outputs)
-        accuracy = compute_accuracy(labels, binary_outputs)
-        f_measure = compute_f_measure(labels, binary_outputs)
-        return {'challenge_score': challenge_score, 'auroc': auroc, 'auprc': auprc, 'accuracy': accuracy,
-                'f_measure': f_measure}
+        loss = self.criterion(outputs, targets)
+        self.log(f'{name}_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        return loss, outputs, targets
 
     def configure_optimizers(self) -> Optimizer:
         return AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
@@ -80,7 +70,7 @@ class Model(LightningModule):
         batch_size = 7
         from settings import Config
         config = Config()
-        x = randn(batch_size, config.model.input_channels, config.data_loader.input_length)
+        x = randn(batch_size, config.model.input_channels, config.data.input_length)
         model = cls(config.model)
         logger.info(str(model))
         logger.info(summarize(model))

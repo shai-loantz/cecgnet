@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import torch
+from lightning import seed_everything
 
 from data_tools.data_set import extract_features
 from models import Model, MODELS
@@ -18,14 +19,14 @@ from utils.train import run_train
 #
 ################################################################################
 
+seed_everything(42)
 config = Config()
 
 
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
     model = MODELS[config.model_name](config.model)
-    params = config.get_trainer_params(False)
-    run_train(model, params, config.pre_process, config.data_loader)
+    run_train(model, config, use_wandb=False)
     logger.info('Done training')
 
 
@@ -44,7 +45,7 @@ def run_model(record: str, model: Model, verbose: bool) -> tuple[float, float]:
     model.eval()
 
     logger.debug('Extracting features')
-    features = extract_features(record, config.data_loader.input_length, config.pre_process, training=False)
+    features = extract_features(record, config.data.input_length, config.pre_process, training=False)
 
     device = next(model.parameters()).device
     features = features.to(device)

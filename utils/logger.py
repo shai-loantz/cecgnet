@@ -30,10 +30,10 @@ def setup_logger():
     logger.setLevel(logging.DEBUG if should_log() else logging.CRITICAL)
     logger.propagate = False
 
-    format_prefix = f'[GPU {rank}] ' if dist.is_initialized() else ''
-    formatter = logging.Formatter(f'{format_prefix}%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    rank_prefix = rank if dist.is_initialized() else 'pre-dist'
+    formatter = logging.Formatter(f'%(rank)s - %(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                                  defaults={'rank': rank_prefix})
 
-    # Debug file handler
     debug_handler = get_file_handler(logging.DEBUG, formatter, rank)
     info_file_handler = get_file_handler(logging.INFO, formatter, rank)
     error_file_handler = get_file_handler(logging.ERROR, formatter, rank)
@@ -49,12 +49,14 @@ def setup_logger():
     stderr_handler.setLevel(logging.WARNING if is_main_proc() else logging.CRITICAL)  # Only rank 0 prints
     stderr_handler.setFormatter(formatter)
 
-    if not logger.hasHandlers():
-        logger.addHandler(debug_handler)
-        logger.addHandler(info_file_handler)
-        logger.addHandler(error_file_handler)
-        logger.addHandler(stdout_handler)
-        logger.addHandler(stderr_handler)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    logger.addHandler(debug_handler)
+    logger.addHandler(info_file_handler)
+    logger.addHandler(error_file_handler)
+    logger.addHandler(stdout_handler)
+    logger.addHandler(stderr_handler)
 
     logging.captureWarnings(True)
     warnings.simplefilter("default")
