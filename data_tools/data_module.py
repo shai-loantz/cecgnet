@@ -13,14 +13,18 @@ from utils.logger import logger
 class DataModule(LightningDataModule):
     def __init__(self, data_config: DataConfig, preprocess_config: PreprocessConfig) -> None:
         super().__init__()
-        data_set = ECGDataset(data_config.data_folder, data_config.input_length, preprocess_config)
-        length = len(data_set)
-        valid_size = int(length * data_config.validation_size)
-        train_size = length - valid_size
-        logger.info(f'Train set size: {train_size}, Validation set size: {valid_size}')
+        self.data_config = data_config
+        self.preprocess_config = preprocess_config
+        self.data_loader_config = self.data_config.get_data_loader_config()
 
-        self.data_loader_config = data_config.get_data_loader_config()
-        self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
+    def setup(self, stage: str) -> None:
+        if stage == "fit":
+            data_set = ECGDataset(self.data_config.data_folder, self.data_config.input_length, self.preprocess_config)
+            length = len(data_set)
+            valid_size = int(length * self.data_config.validation_size)
+            train_size = length - valid_size
+            logger.info(f'Train set size: {train_size}, Validation set size: {valid_size}')
+            self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, shuffle=True,
@@ -32,6 +36,6 @@ class DataModule(LightningDataModule):
 
 
 def seed_worker(worker_id: int) -> None:
-    worker_seed = torch.initial_seed() % 2**32
+    worker_seed = torch.initial_seed() % 2 ** 32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
