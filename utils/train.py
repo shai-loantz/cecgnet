@@ -20,7 +20,7 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
     logger.info('Training')
     trainer.fit(model, datamodule=data_module)
     logger.info('Training completed. Aggregating validation metrics')
-    log_metrics(trainer, config.model.threshold, 'val')
+    log_metrics(trainer, config.model.threshold)
     logger.info('Done aggregating validation metrics')
 
 
@@ -35,9 +35,9 @@ def test(model: Model, config: Config, test_data_folder: str, use_wandb: bool = 
     logger.info('Done testing')
 
 
-def log_metrics(trainer: Trainer, threshold: float, step_name: str) -> None:
+def log_metrics(trainer: Trainer, threshold: float) -> None:
     if is_main_proc():
-        metrics = calculate_metrics_per_epoch(get_run_id(), threshold, step_name)
+        metrics = calculate_metrics_per_epoch(get_run_id(), threshold)
         for metric_name, values in metrics.items():
             for epoch, value in enumerate(values):
                 trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
