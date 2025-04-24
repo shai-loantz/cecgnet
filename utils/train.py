@@ -28,7 +28,7 @@ def test(model: Model, config: Config, test_data_folder: str, use_wandb: bool = 
     data_module = DataModule(config.data, config.pre_process, test_data_folder)
 
     test_params = config.get_trainer_params(use_wandb)
-    test_params.update({'devices': 1, 'strategy': None})
+    test_params.update({'devices': 1, 'strategy': 'auto'})
     tester = Trainer(**test_params)
     logger.info(f'Testing on {test_data_folder}')
     tester.test(model=model, datamodule=data_module, ckpt_path='best')
