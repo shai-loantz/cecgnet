@@ -46,7 +46,7 @@ def calculate_metrics_per_epoch(run_id: str, threshold: float, step_name: str) -
 
     metrics: dict[str, list[float]] = {}
     for metric_name in METRIC_NAMES:
-        metrics[metric_name] = []
+        metrics[f'{step_name}_{metric_name}'] = []
 
     for epoch in epochs:
         epoch_metrics = _calculate_metrics(np.array(epoch[0]), np.array(epoch[1]), threshold)
