@@ -96,7 +96,7 @@ class Config(BaseSettings):
     data: DataConfig
     pre_process: PreprocessConfig
     model: ModelConfig
-    model_folder: str = 'lightning_logs'
+    model_folder: str = 'checkpoints'
 
     # pre training settings
     pretraining: bool

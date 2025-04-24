@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
@@ -6,7 +7,7 @@ from torch.optim import AdamW, Optimizer
 
 from settings import ModelConfig
 from utils.logger import setup_logger, logger
-from utils.metrics import write_outputs
+from utils.metrics import write_outputs, calculate_metrics
 from utils.run_id import get_run_id
 
 
@@ -28,17 +29,18 @@ class Model(LightningModule):
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
-    def _metrics_step(self, batch: list[Tensor], name: str) -> None:
-        self.our_logger.debug(f'{name} step {batch[0].shape=}')
-        _, outputs, targets = self._run_batch(batch, name)
-        if not self.trainer.sanity_checking:
-            write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets, name)
-
     def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self._metrics_step(batch, 'val')
+        self.our_logger.debug(f'val step {batch[0].shape=}')
+        _, outputs, targets = self._run_batch(batch, 'val')
+        if not self.trainer.sanity_checking:
+            logger.debug(f'Writing output for epoch {self.current_epoch}')
+            write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
 
     def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self._metrics_step(batch, 'test')
+        self.our_logger.debug(f'test step {batch[0].shape=}')
+        _, outputs, targets = self._run_batch(batch, 'test')
+        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
+        self.log_dict({f'test_{key}': value for key, value in metrics.items()})
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch

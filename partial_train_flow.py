@@ -4,7 +4,7 @@ from lightning import seed_everything
 
 from models import MODELS
 from settings import Config
-from utils.train import train_and_evaluate, restart_wandb_run
+from utils.train import train, test, restart_wandb_run
 
 seed_everything(42)
 config = Config()
@@ -18,7 +18,8 @@ def main() -> None:
     """
     restart_wandb_run(config.get_checkpoint_name(), RUN_POSTFIX)
     model = MODELS[config.model_name](config.pre_model)
-    train_and_evaluate(model, config, use_pretraining=True, test_data_folder=config.data.data_folder)
+    train(model, config, use_pretraining=True)
+    test(model, config, test_data_folder=config.data.data_folder)
 
 
 if __name__ == '__main__':

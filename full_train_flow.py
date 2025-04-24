@@ -5,7 +5,7 @@ from lightning import seed_everything
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train_and_evaluate, restart_wandb_run
+from utils.train import train, restart_wandb_run
 
 seed_everything(42)
 config = Config()
@@ -17,7 +17,7 @@ def main():
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
-        train_and_evaluate(model, config, use_pretraining=True)
+        train(model, config, use_pretraining=True)
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False
@@ -26,7 +26,7 @@ def main():
     else:  # load from pretrained model
         model = load_model(config.pretraining_checkpoint_path)
     logger.info('Fine-tuning')
-    train_and_evaluate(model, config)
+    train(model, config)
     return model
 
 

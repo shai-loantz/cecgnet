@@ -10,13 +10,12 @@ from utils.metrics import calculate_metrics_per_epoch
 from utils.run_id import get_run_id, set_run_id
 
 
-def train_and_evaluate(model: Model, config: Config, use_wandb: bool = True,
-                       use_pretraining: bool = False, test_data_folder: str | None = None) -> None:
-    params = config.get_trainer_params(use_wandb)
-    trainer = Trainer(**params)
+def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining: bool = False) -> None:
+    trainer_params = config.get_trainer_params(use_wandb)
+    trainer = Trainer(**trainer_params)
     logger.info('Creating data module')
     data_config = config.pre_data if use_pretraining else config.data
-    data_module = DataModule(data_config, config.pre_process, test_data_folder)
+    data_module = DataModule(data_config, config.pre_process)
 
     logger.info('Training')
     trainer.fit(model, datamodule=data_module)
@@ -24,12 +23,16 @@ def train_and_evaluate(model: Model, config: Config, use_wandb: bool = True,
     log_metrics(trainer, config.model.threshold, 'val')
     logger.info('Done aggregating validation metrics')
 
-    if test_data_folder is not None:
-        logger.info(f'Testing on {test_data_folder}')
-        trainer.test(datamodule=data_module)
-        logger.info('Done testing. Aggregating metrics')
-        log_metrics(trainer, config.model.threshold, 'test')
-        logger.info('Done aggregating test metrics')
+
+def test(model: Model, config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
+    data_module = DataModule(config.data, config.pre_process, test_data_folder)
+
+    test_params = config.get_trainer_params(use_wandb)
+    test_params.update({'devices': 1, 'strategy': None})
+    tester = Trainer(**test_params)
+    logger.info(f'Testing on {test_data_folder}')
+    tester.test(model=model, datamodule=data_module, ckpt_path='best')
+    logger.info('Done testing')
 
 
 def log_metrics(trainer: Trainer, threshold: float, step_name: str) -> None:

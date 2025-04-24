@@ -8,7 +8,7 @@ from data_tools.data_set import extract_features
 from models import Model, MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train_and_evaluate
+from utils.train import train
 
 # Edit this script to add your team's code. Some functions are *required*, but you can edit most parts of the required functions,
 # change or remove non-required functions, and add your own functions.
@@ -26,7 +26,7 @@ config = Config()
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
     model = MODELS[config.model_name](config.model)
-    train_and_evaluate(model, config, use_wandb=False)
+    train(model, config, use_wandb=False)
     logger.info('Done training')
 
 
