@@ -3,7 +3,7 @@ import random
 import numpy as np
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import random_split, DataLoader
+from torch.utils.data import random_split, DataLoader, Dataset
 
 from data_tools.data_set import ECGDataset
 from settings import DataConfig, PreprocessConfig
@@ -11,11 +11,12 @@ from utils.logger import logger
 
 
 class DataModule(LightningDataModule):
-    def __init__(self, data_config: DataConfig, preprocess_config: PreprocessConfig) -> None:
+    def __init__(self, data_config: DataConfig, preprocess_config: PreprocessConfig, test_data_folder: str | None = None) -> None:
         super().__init__()
         self.data_config = data_config
         self.preprocess_config = preprocess_config
         self.data_loader_config = self.data_config.get_data_loader_config()
+        self.test_data_folder = test_data_folder
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
@@ -25,13 +26,20 @@ class DataModule(LightningDataModule):
             train_size = length - valid_size
             logger.info(f'Train set size: {train_size}, Validation set size: {valid_size}')
             self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
+        if stage == "test":
+            self.test_dataset = ECGDataset(self.test_data_folder, self.data_config.input_length, self.preprocess_config)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True,
-                          worker_init_fn=seed_worker, **self.data_loader_config)
+        return self._get_data_loader(self.train_dataset, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False,
+        return self._get_data_loader(self.val_dataset)
+
+    def test_dataloader(self):
+        return self._get_data_loader(self.test_dataset)
+
+    def _get_data_loader(self, data_set: Dataset, shuffle: bool = False) -> DataLoader:
+        return DataLoader(data_set, shuffle=shuffle,
                           worker_init_fn=seed_worker, **self.data_loader_config)
 
 
