@@ -36,11 +36,13 @@ class DataModule(LightningDataModule):
         return self._get_data_loader(self.val_dataset)
 
     def test_dataloader(self):
-        return self._get_data_loader(self.test_dataset)
+        return self._get_data_loader(self.test_dataset, num_workers=0, persistent_workers=False)
 
-    def _get_data_loader(self, data_set: Dataset, shuffle: bool = False) -> DataLoader:
+    def _get_data_loader(self, data_set: Dataset, shuffle: bool = False, **kwargs) -> DataLoader:
+        data_loader_config = self.data_loader_config.copy()
+        data_loader_config.update(kwargs)
         return DataLoader(data_set, shuffle=shuffle,
-                          worker_init_fn=seed_worker, **self.data_loader_config)
+                          worker_init_fn=seed_worker, **data_loader_config)
 
 
 def seed_worker(worker_id: int) -> None:
