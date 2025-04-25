@@ -183,3 +183,4 @@ wandb/
 logs/
 current_run.txt
 RUN_ID
+config.local.env

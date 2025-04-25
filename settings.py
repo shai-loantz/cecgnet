@@ -112,7 +112,7 @@ class Config(BaseSettings):
     checkpoint_name: Optional[str] = None
     manual_config: bool
     model_config = SettingsConfigDict(
-        env_file='config.env',
+        env_file=('config.env', 'config.local.env'),
         env_file_encoding='utf-8',
         env_nested_delimiter='__'
     )
