@@ -2,8 +2,8 @@ import wandb
 from lightning import Trainer
 
 from data_tools.data_module import DataModule
-from models import Model
-from settings import Config
+from models import Model, MODELS
+from settings import Config, ModelConfig, ModelName
 from utils.ddp import is_main_proc
 from utils.logger import logger
 from utils.metrics import calculate_metrics_per_epoch
@@ -24,7 +24,8 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
     logger.info('Done aggregating validation metrics')
 
 
-def test(model: Model, config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
+def test(config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
+    model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)
     data_module = DataModule(config.data, config.pre_process, test_data_folder)
 
     test_params = config.get_trainer_params(use_wandb)
@@ -33,6 +34,12 @@ def test(model: Model, config: Config, test_data_folder: str, use_wandb: bool = 
     logger.info(f'Testing on {test_data_folder}')
     tester.test(model=model, datamodule=data_module, ckpt_path='best')
     logger.info('Done testing')
+
+
+def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig):
+    model_class = MODELS[model_name]
+    logger.info(f'Loading model {model_name.value} from {checkpoint_path}')
+    return model_class.load_from_checkpoint(str(checkpoint_path), config=model_config)
 
 
 def log_metrics(trainer: Trainer, threshold: float) -> None:

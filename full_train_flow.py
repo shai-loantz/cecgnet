@@ -5,7 +5,7 @@ from lightning import seed_everything
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train, restart_wandb_run
+from utils.train import train, restart_wandb_run, load_model
 
 seed_everything(42)
 config = Config()
@@ -24,16 +24,10 @@ def main():
         restart_wandb_run(config.get_checkpoint_name(), RUN_POSTFIX)
         logger.info('Pre-training completed')
     else:  # load from pretrained model
-        model = load_model(config.pretraining_checkpoint_path)
+        model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)
     logger.info('Fine-tuning')
     train(model, config)
     return model
-
-
-def load_model(checkpoint_path: str):
-    model_class = MODELS[config.model_name]
-    logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
-    return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
 
 
 if __name__ == '__main__':
