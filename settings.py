@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
@@ -117,6 +117,8 @@ class Config(BaseSettings):
         env_nested_delimiter='__'
     )
 
+    model_checkpoint_cb: Any = None
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.pretraining:
@@ -133,14 +135,15 @@ class Config(BaseSettings):
     def get_trainer_params(self, use_wandb: bool = True) -> dict:
         params = self.lightning.model_dump()
         params['logger'] = WandbLogger() if use_wandb and is_main_proc() else None
-        params['callbacks'] = [ModelCheckpoint(
+        self.model_checkpoint_cb = ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),
             monitor="val_loss",
             mode="min",
             save_top_k=1,
             verbose=True
-        )]
+        )
+        params['callbacks'] = [self.model_checkpoint_cb]
         params['enable_progress_bar'] = is_main_proc()
 
         if self.pretraining:

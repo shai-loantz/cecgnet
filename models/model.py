@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
@@ -39,7 +40,9 @@ class Model(LightningModule):
     def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
         self.our_logger.debug(f'test step {batch[0].shape=}')
         _, outputs, targets = self._run_batch(batch, 'test')
-        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
+        metrics = calculate_metrics(np.array(targets.to(torch.float32).cpu()),
+                                    np.array(outputs.to(torch.float32).cpu()),
+                                    self.config.threshold)
         self.log_dict({f'test_{key}': value for key, value in metrics.items()})
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:

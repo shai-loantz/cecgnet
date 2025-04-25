@@ -8,7 +8,7 @@ from data_tools.data_set import extract_features
 from models import Model, MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train
+from utils.train import train, get_model_from_checkpoint
 
 # Edit this script to add your team's code. Some functions are *required*, but you can edit most parts of the required functions,
 # change or remove non-required functions, and add your own functions.
@@ -33,10 +33,7 @@ def train_model(data_folder: str, model_folder: str, verbose: bool):
 # Load your trained models. This function is *required*. You should edit this function to add your code, but do *not* change the
 # arguments of this function. If you do not train one of the models, then you can return None for the model.
 def load_model(model_folder: str, verbose: bool):
-    model_class = MODELS[config.model_name]
-    checkpoint_path = Path(model_folder) / f'{config.get_checkpoint_name()}.ckpt'
-    logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
-    return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
+    return get_model_from_checkpoint(config)
 
 
 # Run your trained model. This function is *required*. You should edit this function to add your code, but do *not* change the

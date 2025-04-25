@@ -25,7 +25,7 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
 
 
 def test(config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
-    model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)
+    model = get_model_from_checkpoint(config)
     data_module = DataModule(config.data, config.pre_process, test_data_folder)
 
     test_params = config.get_trainer_params(use_wandb)
@@ -56,3 +56,10 @@ def restart_wandb_run(checkpoint_name: str, run_postfix: str) -> None:
         wandb.finish()
         wandb.init(name=run_name, reinit=True)
         set_run_id(wandb.run.id)
+
+
+def get_model_from_checkpoint(config: Config) -> Model:
+    model_class = MODELS[config.model_name]
+    checkpoint_path = config.model_checkpoint_cb.best_model_path
+    logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
+    return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
