@@ -32,7 +32,7 @@ def test(config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
     test_params.update({'devices': 1, 'strategy': 'auto'})
     tester = Trainer(**test_params)
     logger.info(f'Testing on {test_data_folder}')
-    tester.test(model=model, datamodule=data_module, ckpt_path='best')
+    tester.test(model=model, datamodule=data_module)
     logger.info('Done testing')
 
 
