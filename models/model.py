@@ -18,6 +18,8 @@ class Model(LightningModule):
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
+        self.test_targets: list[Tensor] = []
+        self.test_outputs: list[Tensor] = []
 
     def setup(self, stage=None):
         if self.our_logger is None:
@@ -37,12 +39,20 @@ class Model(LightningModule):
             logger.debug(f'Writing output for epoch {self.current_epoch}')
             write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
 
+    def on_test_epoch_start(self) -> None:
+        self.test_targets = []
+        self.test_outputs = []
+
     def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
         self.our_logger.debug(f'test step {batch[0].shape=}')
         _, outputs, targets = self._run_batch(batch, 'test')
-        metrics = calculate_metrics(np.array(targets.to(torch.float32).cpu()),
-                                    np.array(outputs.to(torch.float32).cpu()),
-                                    self.config.threshold)
+        self.test_targets.append(targets.detach().cpu())
+        self.test_outputs.append(outputs.detach().cpu())
+
+    def on_test_epoch_end(self) -> None:
+        targets = np.array(torch.cat(self.test_targets, dim=0).to(torch.float32))
+        outputs = np.array(torch.cat(self.test_outputs, dim=0).to(torch.float32))
+        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
         self.log_dict({f'test_{key}': value for key, value in metrics.items()})
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
