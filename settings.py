@@ -128,8 +128,9 @@ class Config(BaseSettings):
             self.pre_data = self.data.copy_with_override(**pre_vars)
             self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
 
-    def get_predictor_params(self) -> dict:
-        params = self.lightning.model_dump()
+    def get_tester_params(self) -> dict:
+        params = self.get_trainer_params()
+        params.update({'devices': 1, 'strategy': 'auto'})
         return params
 
     def get_trainer_params(self, use_wandb: bool = True) -> dict:
@@ -160,3 +161,20 @@ class Config(BaseSettings):
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder
         self.model_folder = model_folder
+
+    def get_wandb_params(self):
+        return {
+            'trainer': self.get_trainer_params(),
+            'data': self.data,
+            'pre_process': self.pre_process,
+            'model': self.model,
+            'model_folder': self.model_folder,
+            'pretraining': self.pretraining,
+            'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
+            'pre_trainer_config': self.pre_trainer_config,
+            'pre_trainer': self.pre_trainer,
+            'pre_model': self.pre_model,
+            'pre_data': self.pre_data,
+            'model_name': self.model_name.value,
+            'checkpoint_name': self.get_checkpoint_name(),
+        }

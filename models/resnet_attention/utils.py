@@ -28,7 +28,7 @@ def get_attention_layers(layer_conf: LayerConf, attention_type: Attention,
 
 
 def get_attention_tail(input_channels: int, attention_type: Attention) -> nn.Sequential:
-    attention_class = ATTENTION.get(attention_type)
+    attention_class = ATTENTION[attention_type]
     tail = get_tail_module(input_channels)
     return nn.Sequential(attention_class(input_channels),
                          tail,

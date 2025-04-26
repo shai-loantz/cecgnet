@@ -66,7 +66,9 @@ class Model(LightningModule):
         """
         if self.config.use_weighted_loss:
             p = self.config.positive_prevalence
-            return tensor([(1 - p) / p])
+            loss_ratio = (1 - p) / p
+            logger.info(f'Initializing BCE loss with {loss_ratio=}')
+            return tensor([loss_ratio])
         return None
 
     @classmethod

@@ -24,12 +24,11 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
     logger.info('Done aggregating validation metrics')
 
 
-def test(config: Config, test_data_folder: str, use_wandb: bool = True) -> None:
+def test(config: Config, test_data_folder: str) -> None:
     model = get_model_from_checkpoint(config)
     data_module = DataModule(config.data, config.pre_process, test_data_folder)
 
-    test_params = config.get_trainer_params(use_wandb)
-    test_params.update({'devices': 1, 'strategy': 'auto'})
+    test_params = config.get_tester_params()
     tester = Trainer(**test_params)
     logger.info(f'Testing on {test_data_folder}')
     tester.test(model=model, datamodule=data_module)
@@ -55,6 +54,7 @@ def restart_wandb_run(checkpoint_name: str, run_postfix: str) -> None:
         run_name = f'{checkpoint_name}_{run_postfix}'
         wandb.finish()
         wandb.init(name=run_name, reinit=True)
+        wandb.run.log_code(".")
         set_run_id(wandb.run.id)
 
 
