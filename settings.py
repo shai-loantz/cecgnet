@@ -162,7 +162,7 @@ class Config(BaseSettings):
         self.data.data_folder = data_folder
         self.model_folder = model_folder
 
-    def get_wandb_params(self):
+    def get_wandb_params(self) -> dict:
         return {
             'trainer': self.get_trainer_params(),
             'data': self.data,

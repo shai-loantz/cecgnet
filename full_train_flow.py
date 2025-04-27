@@ -13,7 +13,7 @@ RUN_POSTFIX = secrets.token_hex(2)
 
 
 def main():
-    restart_wandb_run(config.get_checkpoint_name(), RUN_POSTFIX)
+    restart_wandb_run(config, RUN_POSTFIX)
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
@@ -21,7 +21,7 @@ def main():
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False
-        restart_wandb_run(config.get_checkpoint_name(), RUN_POSTFIX)
+        restart_wandb_run(config, RUN_POSTFIX)
         logger.info('Pre-training completed')
     else:  # load from pretrained model
         model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)

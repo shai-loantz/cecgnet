@@ -49,11 +49,11 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
                 trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
 
 
-def restart_wandb_run(checkpoint_name: str, run_postfix: str) -> None:
+def restart_wandb_run(config: Config, run_postfix: str) -> None:
     if is_main_proc():
-        run_name = f'{checkpoint_name}_{run_postfix}'
+        run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
         wandb.finish()
-        wandb.init(name=run_name, reinit=True)
+        wandb.init(name=run_name, reinit=True, config=config.get_wandb_params())
         wandb.run.log_code(".")
         set_run_id(wandb.run.id)
 
