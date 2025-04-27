@@ -165,16 +165,16 @@ class Config(BaseSettings):
     def get_wandb_params(self) -> dict:
         return {
             'trainer': self.get_trainer_params(),
-            'data': self.data,
-            'pre_process': self.pre_process,
-            'model': self.model,
+            'data': self.data.model_dump(),
+            'pre_process': self.pre_process.model_dump(),
+            'model': self.model.model_dump(),
             'model_folder': self.model_folder,
             'pretraining': self.pretraining,
             'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
-            'pre_trainer_config': self.pre_trainer_config,
-            'pre_trainer': self.pre_trainer,
-            'pre_model': self.pre_model,
-            'pre_data': self.pre_data,
+            'pre_trainer_config': self.pre_trainer_config.model_dump(),
+            'pre_trainer': self.pre_trainer.model_dump(),
+            'pre_model': self.pre_model.model_dump(),
+            'pre_data': self.pre_data.model_dump(),
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
         }
