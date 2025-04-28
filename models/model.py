@@ -8,8 +8,7 @@ from torch.optim import AdamW, Optimizer
 
 from settings import ModelConfig
 from utils.logger import setup_logger, logger
-from utils.metrics import write_outputs, calculate_metrics
-from utils.run_id import get_run_id
+from utils.metrics import calculate_metrics
 
 
 class Model(LightningModule):
@@ -18,8 +17,8 @@ class Model(LightningModule):
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
-        self.test_targets: list[Tensor] = []
-        self.test_outputs: list[Tensor] = []
+        self.targets: list[Tensor] = []
+        self.outputs: list[Tensor] = []
 
     def setup(self, stage=None):
         if self.our_logger is None:
@@ -27,33 +26,46 @@ class Model(LightningModule):
             self.our_logger.info(f"Logger initialized in setup() on rank {self.global_rank}")
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        self.our_logger.debug(f'Training step {batch_idx=}, {batch[0].shape=}')
         inputs, targets = batch
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
-    def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self.our_logger.debug(f'val step {batch[0].shape=}')
-        _, outputs, targets = self._run_batch(batch, 'val')
-        if not self.trainer.sanity_checking:
-            logger.debug(f'Writing output for epoch {self.current_epoch}')
-            write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
+    def _on_metric_epoch_start(self) -> None:
+        self.targets = []
+        self.outputs = []
+
+    def _metric_step(self, batch: list[Tensor], step_name: str) -> None:
+        _, outputs, targets = self._run_batch(batch, step_name)
+        self.targets.append(targets.detach().cpu())
+        self.outputs.append(outputs.detach().cpu())
+
+    def _on_metric_epoch_end(self, step_name: str) -> None:
+        targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32))
+        outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32))
+        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
+        self.log_dict({f'{step_name}_{key}': value for key, value in metrics.items()})
+
+    def on_validation_epoch_start(self) -> None:
+        self._on_metric_epoch_start()
 
     def on_test_epoch_start(self) -> None:
-        self.test_targets = []
-        self.test_outputs = []
+        self._on_metric_epoch_start()
+
+    def validation_step(self, batch: list[Tensor], batch_idx: int) -> None:
+        # _, outputs, targets = self._run_batch(batch, 'val')
+        # if not self.trainer.sanity_checking and :
+        #     logger.debug(f'Writing output for epoch {self.current_epoch}')
+        #     write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
+        self._metric_step(batch, 'val')
 
     def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self.our_logger.debug(f'test step {batch[0].shape=}')
-        _, outputs, targets = self._run_batch(batch, 'test')
-        self.test_targets.append(targets.detach().cpu())
-        self.test_outputs.append(outputs.detach().cpu())
+        self._metric_step(batch, 'test')
+
+    def on_validation_epoch_end(self) -> None:
+        self._on_metric_epoch_end('val')
 
     def on_test_epoch_end(self) -> None:
-        targets = np.array(torch.cat(self.test_targets, dim=0).to(torch.float32))
-        outputs = np.array(torch.cat(self.test_outputs, dim=0).to(torch.float32))
-        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
-        self.log_dict({f'test_{key}': value for key, value in metrics.items()})
+        self._on_metric_epoch_end('test')
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets = batch

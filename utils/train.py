@@ -19,8 +19,8 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
 
     logger.info('Training')
     trainer.fit(model, datamodule=data_module)
-    logger.info('Training completed. Aggregating validation metrics')
-    log_metrics(trainer, config.model.threshold)
+    # logger.info('Training completed. Aggregating validation metrics')
+    # log_metrics(trainer, config.model.threshold)
     logger.info('Done aggregating validation metrics')
 
 
