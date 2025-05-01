@@ -1,12 +1,14 @@
 import secrets
 
 from lightning import seed_everything
+from torch import set_float32_matmul_precision
 
 from models import MODELS
 from settings import Config
 from utils.logger import logger
 from utils.train import train, restart_wandb_run, load_model, test
 
+set_float32_matmul_precision('high')
 seed_everything(42)
 config = Config()
 RUN_POSTFIX = secrets.token_hex(2)
@@ -37,5 +39,7 @@ if __name__ == '__main__':
 
     try:
         main()
+    except KeyboardInterrupt:
+        logger.error('Interrupted by user. Closing')
     finally:
         wandb.finish()
