@@ -24,7 +24,7 @@ class Attention(str, Enum):
 
 
 class ModelName(str, Enum):
-    SIMPLE = 'simple'
+    RESNET = 'resnet'
     RESNET_ATTENTION = 'resnet_attention'
     VGG = 'vgg'
     SMALL = 'small'
@@ -110,7 +110,7 @@ class Config(BaseSettings):
     pre_model: Optional[ModelConfig] = None
     pre_data: Optional[DataConfig] = None
 
-    model_name: ModelName = ModelName.SIMPLE
+    model_name: ModelName = ModelName.RESNET
     checkpoint_name: Optional[str] = None
     manual_config: bool
     model_config = SettingsConfigDict(

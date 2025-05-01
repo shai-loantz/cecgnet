@@ -7,7 +7,7 @@ from models.small.model import Small
 from models.vgg.model import VGG1D
 
 MODELS: dict[str, Type[Model]] = {
-    'simple': SimpleResNet,
+    'resnet': SimpleResNet,
     'resnet_attention': ResNetAttention,
     'vgg': VGG1D,
     'small': Small,
