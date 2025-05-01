@@ -4,7 +4,8 @@ import torch.nn as nn
 from lightning import LightningModule
 from lightning.pytorch.utilities.model_summary import summarize
 from torch import Tensor, randn, Size, sigmoid, tensor
-from torch.optim import AdamW, Optimizer
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import LambdaLR
 
 from settings import ModelConfig
 from utils.logger import setup_logger, logger
@@ -74,8 +75,22 @@ class Model(LightningModule):
         self.log(f'{name}_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss, outputs, targets
 
-    def configure_optimizers(self) -> Optimizer:
-        return AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
+    def configure_optimizers(self) -> dict:
+        optimizer = AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
+
+        def lr_lambda(current_step):
+            if current_step < self.warmup_steps:
+                return float(current_step) / float(max(1, self.config.warmup_steps))
+            return 1.0
+
+        scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step",
+            }
+        }
 
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """

@@ -82,6 +82,7 @@ class ModelConfig(BaseConfig):
     threshold: float
     use_weighted_loss: bool = True
     positive_prevalence: float
+    warmup_steps: int = 1000
 
     attention: Attention = Attention.SelfAttention
 
