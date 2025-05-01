@@ -19,7 +19,7 @@ def main() -> None:
     restart_wandb_run(config, RUN_POSTFIX)
     model = MODELS[config.model_name](config.pre_model)
     train(model, config, use_pretraining=True)
-    test(config, test_data_folder=config.data.data_folder)
+    test(config)
 
 
 if __name__ == '__main__':

@@ -11,12 +11,11 @@ from utils.logger import logger
 
 
 class DataModule(LightningDataModule):
-    def __init__(self, data_config: DataConfig, preprocess_config: PreprocessConfig, test_data_folder: str | None = None) -> None:
+    def __init__(self, data_config: DataConfig, preprocess_config: PreprocessConfig) -> None:
         super().__init__()
         self.data_config = data_config
         self.preprocess_config = preprocess_config
         self.data_loader_config = self.data_config.get_data_loader_config()
-        self.test_data_folder = test_data_folder
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
@@ -27,7 +26,7 @@ class DataModule(LightningDataModule):
             logger.info(f'Train set size: {train_size}, Validation set size: {valid_size}')
             self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
         if stage == "test":
-            self.test_dataset = ECGDataset(self.test_data_folder, self.data_config.input_length, self.preprocess_config)
+            self.test_dataset = ECGDataset(self.data_config.test_data_folder, self.data_config.input_length, self.preprocess_config)
 
     def train_dataloader(self):
         return self._get_data_loader(self.train_dataset, shuffle=True)

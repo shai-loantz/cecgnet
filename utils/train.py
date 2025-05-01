@@ -24,13 +24,13 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
     logger.info('Done aggregating validation metrics')
 
 
-def test(config: Config, test_data_folder: str) -> None:
+def test(config: Config) -> None:
     model = get_model_from_checkpoint(config)
-    data_module = DataModule(config.data, config.pre_process, test_data_folder)
+    data_module = DataModule(config.data, config.pre_process)
 
     test_params = config.get_tester_params()
     tester = Trainer(**test_params)
-    logger.info(f'Testing on {test_data_folder}')
+    logger.info(f'Testing')
     tester.test(model=model, datamodule=data_module)
     logger.info('Done testing')
 

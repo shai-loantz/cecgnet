@@ -49,9 +49,11 @@ class DataConfig(BaseConfig):
     input_length: int
     validation_size: float
     data_folder: Optional[str] = None
+    test_data_folder: str
 
     def get_data_loader_config(self) -> dict:
-        return self.model_dump(exclude={"input_length", "validation_size", "data_folder"})
+        return self.model_dump(exclude={"input_length", "validation_size",
+                                        "data_folder", "test_data_folder"})
 
 
 class PreprocessConfig(BaseModel):
