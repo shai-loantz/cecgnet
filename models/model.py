@@ -79,7 +79,7 @@ class Model(LightningModule):
         optimizer = AdamW(self.parameters(), lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
 
         def lr_lambda(current_step):
-            if current_step < self.warmup_steps:
+            if current_step < self.config.warmup_steps:
                 return float(current_step) / float(max(1, self.config.warmup_steps))
             return 1.0
 
