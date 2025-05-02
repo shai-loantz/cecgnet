@@ -70,7 +70,7 @@ class TrainerConfig(BaseConfig):
 class LightningConfig(BaseModel):
     accelerator: LightningAccelerator = LightningAccelerator.GPU
     strategy: LightningStrategy = LightningStrategy.AUTO
-    devices: list
+    devices: list | int
     precision: str = "bf16-mixed"
     num_nodes: int = 1
 

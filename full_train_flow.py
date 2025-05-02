@@ -6,7 +6,7 @@ from torch import set_float32_matmul_precision
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train, restart_wandb_run, load_model, test
+from utils.train import train, restart_wandb_run, load_model, test, get_model_from_checkpoint
 
 set_float32_matmul_precision('high')
 seed_everything(42)
@@ -20,6 +20,8 @@ def main():
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
         train(model, config, use_pretraining=True)
+        test(config)
+        model = get_model_from_checkpoint(config)
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False
