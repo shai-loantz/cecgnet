@@ -61,5 +61,7 @@ def restart_wandb_run(config: Config, run_postfix: str) -> None:
 def get_model_from_checkpoint(config: Config) -> Model:
     model_class = MODELS[config.model_name]
     checkpoint_path = config.model_checkpoint_cb.best_model_path
+    if checkpoint_path == '':
+        raise Exception('No checkpoint was saved')
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)

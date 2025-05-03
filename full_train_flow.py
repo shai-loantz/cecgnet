@@ -20,8 +20,8 @@ def main():
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
         train(model, config, use_pretraining=True)
-        test(config)
         model = get_model_from_checkpoint(config)
+        test(config)
 
         model.change_params(config.model)  # also saves the pretraining
         config.pretraining = False

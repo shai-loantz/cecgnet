@@ -35,7 +35,7 @@ class DataModule(LightningDataModule):
         return self._get_data_loader(self.val_dataset)
 
     def test_dataloader(self):
-        return self._get_data_loader(self.test_dataset, num_workers=0, persistent_workers=False, prefetch_factor=None)
+        return self._get_data_loader(self.test_dataset)
 
     def _get_data_loader(self, data_set: Dataset, shuffle: bool = False, **kwargs) -> DataLoader:
         data_loader_config = self.data_loader_config.copy()
