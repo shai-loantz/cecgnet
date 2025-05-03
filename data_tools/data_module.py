@@ -3,7 +3,8 @@ import random
 import numpy as np
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import random_split, DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
+from sklearn.model_selection import train_test_split
 
 from data_tools.data_set import ECGDataset
 from settings import DataConfig, PreprocessConfig
@@ -19,12 +20,17 @@ class DataModule(LightningDataModule):
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
-            data_set = ECGDataset(self.data_config.data_folder, self.data_config.input_length, self.preprocess_config)
-            length = len(data_set)
-            valid_size = int(length * self.data_config.validation_size)
-            train_size = length - valid_size
-            logger.info(f'Train set size: {train_size}, Validation set size: {valid_size}')
-            self.train_dataset, self.val_dataset = random_split(data_set, [train_size, valid_size])
+            dataset = ECGDataset(self.data_config.data_folder, self.data_config.input_length, self.preprocess_config)
+            labels = [label for _, label in dataset]
+            train_indices, validation_indices = train_test_split(
+                range(len(dataset)),
+                test_size=self.data_config.validation_size,
+                stratify=labels,
+                random_state=42,
+            )
+            self.train_dataset = Subset(dataset, train_indices)
+            self.val_dataset = Subset(dataset, validation_indices)
+            logger.info(f'Train set size: {len(train_indices)}, Validation set size: {len(validation_indices)}')
         if stage == "test":
             self.test_dataset = ECGDataset(self.data_config.test_data_folder, self.data_config.input_length, self.preprocess_config)
 
