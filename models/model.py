@@ -43,7 +43,7 @@ class Model(LightningModule):
     def _on_metric_epoch_end(self, step_name: str) -> None:
         targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32))
         outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32))
-        metrics = calculate_metrics(np.array(targets), np.array(outputs), self.config.threshold)
+        metrics = calculate_metrics(targets, outputs, self.config.threshold)
         self.log_dict({f'{step_name}_{key}': value for key, value in metrics.items()})
 
     def on_validation_epoch_start(self) -> None:
