@@ -31,9 +31,6 @@ class Model(LightningModule):
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
-    def on_train_end(self) -> None:
-        param
-
     def _on_metric_epoch_start(self) -> None:
         self.targets = []
         self.outputs = []
