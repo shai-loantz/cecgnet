@@ -33,7 +33,7 @@ class ECGDataset(Dataset):
         except Exception:
             self.logger.exception(f'Failed extracting features for {record_file_name} ({idx=})')
             features = torch.zeros(12, 934, dtype=torch.bfloat16)
-        label = torch.tensor([load_label(record_file_name)], dtype=torch.float32)
+        label = self.get_label(idx)
         return features, label
 
 
