@@ -20,16 +20,21 @@ class DataModule(LightningDataModule):
 
     def setup(self, stage: str) -> None:
         if stage == "fit":
+            logger.debug('Getting dataset')
             dataset = ECGDataset(self.data_config.data_folder, self.data_config.input_length, self.preprocess_config)
-            labels = [label for _, label in dataset]
+            logger.debug('Getting labels')
+            labels = [dataset.get_label(idx) for idx in range(len(dataset))]
+            logger.debug('Getting Split indices')
             train_indices, validation_indices = train_test_split(
                 range(len(dataset)),
                 test_size=self.data_config.validation_size,
                 stratify=labels,
                 random_state=42,
             )
+            logger.debug('Creating dataset Subsets')
             self.train_dataset = Subset(dataset, train_indices)
             self.val_dataset = Subset(dataset, validation_indices)
+            logger.debug('Creating train_labels')
             self.train_labels = [labels[i] for i in train_indices]
             logger.info(f'Train set size: {len(train_indices)}, Validation set size: {len(validation_indices)}')
         if stage == "test":
