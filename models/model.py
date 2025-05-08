@@ -31,6 +31,9 @@ class Model(LightningModule):
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 
+    def on_train_end(self) -> None:
+        param
+
     def _on_metric_epoch_start(self) -> None:
         self.targets = []
         self.outputs = []
@@ -41,8 +44,8 @@ class Model(LightningModule):
         self.outputs.append(outputs.detach().cpu())
 
     def _on_metric_epoch_end(self, step_name: str) -> None:
-        targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32))
-        outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32))
+        targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32)).flatten()
+        outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32)).flatten()
         metrics = calculate_metrics(targets, outputs, self.config.threshold)
         self.log_dict({f'{step_name}_{key}': value for key, value in metrics.items()})
 
