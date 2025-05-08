@@ -142,10 +142,9 @@ class Config(BaseSettings):
         self.model_checkpoint_cb = ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),
-            monitor="val_loss",
-            mode="min",
+            monitor="val_challenge_score",
+            mode="max",
             save_top_k=1,
-            verbose=True
         )
         params['callbacks'] = [self.model_checkpoint_cb]
         params['enable_progress_bar'] = is_main_proc()
