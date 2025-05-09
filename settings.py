@@ -50,6 +50,7 @@ class DataConfig(BaseConfig):
     validation_size: float
     data_folder: Optional[str] = None
     test_data_folder: str
+    positive_sampling_factor: float = 9.0
 
     def get_data_loader_config(self) -> dict:
         return self.model_dump(exclude={"input_length", "validation_size",

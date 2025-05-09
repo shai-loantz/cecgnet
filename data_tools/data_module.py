@@ -42,10 +42,8 @@ class DataModule(LightningDataModule):
             logger.info(f'Train set size: {len(self.test_dataset)}')
 
     def train_dataloader(self):
-        positive_weight = 1.0
-        negative_weight = 3.0
         sample_weights = torch.tensor([
-            negative_weight if label == 0 else positive_weight
+            1.0 if label == 0 else self.data_config.positive_sampling_factor
             for label in self.train_labels
         ])
         sampler = torch.utils.data.WeightedRandomSampler(
