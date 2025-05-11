@@ -8,7 +8,7 @@ from data_tools.data_set import extract_features
 from models import Model, MODELS
 from settings import Config
 from utils.logger import logger
-from utils.train import train, get_model_from_checkpoint
+from utils.tools import train, get_model_from_checkpoint
 
 # Edit this script to add your team's code. Some functions are *required*, but you can edit most parts of the required functions,
 # change or remove non-required functions, and add your own functions.

@@ -4,7 +4,7 @@ from lightning import seed_everything
 
 from models import MODELS
 from settings import Config
-from utils.train import train, test, restart_wandb_run
+from utils.tools import train, test, restart_wandb_run
 
 seed_everything(42)
 config = Config()
