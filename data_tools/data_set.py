@@ -22,6 +22,10 @@ class ECGDataset(Dataset):
     def __len__(self):
         return len(self.record_files)
 
+    def get_label(self, idx: int) -> Tensor:
+        record_file_name = self.record_files[idx]
+        return torch.tensor([load_label(record_file_name)], dtype=torch.float32)
+
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         record_file_name = self.record_files[idx]
         try:
@@ -29,8 +33,8 @@ class ECGDataset(Dataset):
         except Exception:
             self.logger.exception(f'Failed extracting features for {record_file_name} ({idx=})')
             features = torch.zeros(12, 934, dtype=torch.bfloat16)
-        labels = torch.tensor([load_label(record_file_name)], dtype=torch.float32)
-        return features, labels
+        label = self.get_label(idx)
+        return features, label
 
 
 def extract_features(record_file_name: str, input_length: int, config: PreprocessConfig, training: bool = True) -> Tensor:

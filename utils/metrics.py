@@ -6,7 +6,6 @@ import numpy as np
 from torch import Tensor
 
 from helper_code import compute_auc, compute_challenge_score, compute_accuracy, compute_f_measure
-from settings import Config
 from utils.logger import logger
 
 OUTPUTS_DIR = 'outputs'
@@ -47,17 +46,17 @@ def calculate_metrics_per_epoch(run_id: str, threshold: float) -> dict[str, list
 
     metrics: dict[str, list[float]] = {}
     for metric_name in METRIC_NAMES:
-        metrics[metric_name] = []
+        metrics[f'val_{metric_name}'] = []
 
     for epoch in epochs:
-        epoch_metrics = _calculate_metrics(np.array(epoch[0]), np.array(epoch[1]), threshold)
+        epoch_metrics = calculate_metrics(np.array(epoch[0]), np.array(epoch[1]), threshold)
         for metric_name, value in epoch_metrics.items():
-            metrics[metric_name].append(value)
+            metrics[f'val_{metric_name}'].append(value)
 
     return metrics
 
 
-def _calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float) -> dict[str, float]:
+def calculate_metrics(labels: np.ndarray, y_pred: np.ndarray, threshold: float) -> dict[str, float]:
     prob_outputs = _sigmoid(y_pred)
     binary_outputs = (prob_outputs > threshold).astype(int)
     challenge_score = compute_challenge_score(labels, prob_outputs)

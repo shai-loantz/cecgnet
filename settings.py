@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
@@ -24,9 +24,10 @@ class Attention(str, Enum):
 
 
 class ModelName(str, Enum):
-    SIMPLE = 'simple'
+    RESNET = 'resnet'
     RESNET_ATTENTION = 'resnet_attention'
     VGG = 'vgg'
+    SMALL = 'small'
 
 
 class LightningStrategy(str, Enum):
@@ -48,9 +49,12 @@ class DataConfig(BaseConfig):
     input_length: int
     validation_size: float
     data_folder: Optional[str] = None
+    test_data_folder: str
+    positive_sampling_factor: float
 
     def get_data_loader_config(self) -> dict:
-        return self.model_dump(exclude={"input_length", "validation_size", "data_folder"})
+        return self.model_dump(exclude={"input_length", "validation_size", "positive_sampling_factor",
+                                        "data_folder", "test_data_folder"})
 
 
 class PreprocessConfig(BaseModel):
@@ -67,7 +71,7 @@ class TrainerConfig(BaseConfig):
 class LightningConfig(BaseModel):
     accelerator: LightningAccelerator = LightningAccelerator.GPU
     strategy: LightningStrategy = LightningStrategy.AUTO
-    devices: str = "auto"
+    devices: list | int
     precision: str = "bf16-mixed"
     num_nodes: int = 1
 
@@ -79,6 +83,7 @@ class ModelConfig(BaseConfig):
     threshold: float
     use_weighted_loss: bool = True
     positive_prevalence: float
+    warmup_steps: int = 1000
 
     attention: Attention = Attention.SelfAttention
 
@@ -96,7 +101,7 @@ class Config(BaseSettings):
     data: DataConfig
     pre_process: PreprocessConfig
     model: ModelConfig
-    model_folder: str = 'lightning_logs'
+    model_folder: str = 'checkpoints'
 
     # pre training settings
     pretraining: bool
@@ -107,14 +112,16 @@ class Config(BaseSettings):
     pre_model: Optional[ModelConfig] = None
     pre_data: Optional[DataConfig] = None
 
-    model_name: ModelName = ModelName.SIMPLE
+    model_name: ModelName = ModelName.RESNET
     checkpoint_name: Optional[str] = None
     manual_config: bool
     model_config = SettingsConfigDict(
-        env_file='config.env',
+        env_file=('config.env', 'config.local.env'),
         env_file_encoding='utf-8',
         env_nested_delimiter='__'
     )
+
+    model_checkpoint_cb: Any = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -125,21 +132,22 @@ class Config(BaseSettings):
             self.pre_data = self.data.copy_with_override(**pre_vars)
             self.pre_trainer = self.trainer.copy_with_override(**pre_vars)
 
-    def get_predictor_params(self) -> dict:
-        params = self.lightning.model_dump()
+    def get_tester_params(self) -> dict:
+        params = self.get_trainer_params()
+        params.update({'devices': 1, 'strategy': 'auto'})
         return params
 
     def get_trainer_params(self, use_wandb: bool = True) -> dict:
         params = self.lightning.model_dump()
         params['logger'] = WandbLogger() if use_wandb and is_main_proc() else None
-        params['callbacks'] = [ModelCheckpoint(
+        self.model_checkpoint_cb = ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),
-            monitor="val_loss",
-            mode="min",
+            monitor="val_challenge_score",
+            mode="max",
             save_top_k=1,
-            verbose=True
-        )]
+        )
+        params['callbacks'] = [self.model_checkpoint_cb]
         params['enable_progress_bar'] = is_main_proc()
 
         if self.pretraining:
@@ -156,3 +164,20 @@ class Config(BaseSettings):
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder
         self.model_folder = model_folder
+
+    def get_wandb_params(self) -> dict:
+        return {
+            'trainer': self.get_trainer_params(),
+            'data': self.data.model_dump(),
+            'pre_process': self.pre_process.model_dump(),
+            'model': self.model.model_dump(),
+            'model_folder': self.model_folder,
+            'pretraining': self.pretraining,
+            'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
+            'pre_trainer_config': self.pre_trainer_config.model_dump(),
+            'pre_trainer': self.pre_trainer.model_dump(),
+            'pre_model': self.pre_model.model_dump(),
+            'pre_data': self.pre_data.model_dump(),
+            'model_name': self.model_name.value,
+            'checkpoint_name': self.get_checkpoint_name(),
+        }

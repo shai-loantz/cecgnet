@@ -11,7 +11,7 @@ filters: dict = {}
 
 
 def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_length: int, config: PreprocessConfig) -> np.ndarray:
-    # signal = trim_leading_zeros(signal)  # TODO: what are we doing with padding?
+    signal = trim_zeros(signal)
     signal = reorder_leads(signal, signal_names)
     signal = np.apply_along_axis(remove_baseline_wander, 0, signal)
     sos_filter = get_filter(fs, config.low_cut_freq, config.high_cut_freq)
@@ -22,10 +22,10 @@ def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_lengt
     return signal
 
 
-def trim_leading_zeros(signal: np.ndarray) -> np.ndarray:
-    """Find the first time (row) when not all leads (columns) are zero and start the signal there"""
+def trim_zeros(signal: np.ndarray) -> np.ndarray:
+    """Trim rows from the start and end where all channels (columns) are zero."""
     nonzero_rows = np.nonzero(np.any(signal != 0, axis=1))[0]
-    return signal[nonzero_rows[0]:, :]
+    return signal[nonzero_rows[0]:nonzero_rows[-1] + 1, :]
 
 
 def get_filter(fs: int, low_cut_freq: float, high_cut_freq: float):
@@ -52,19 +52,38 @@ def create_filters(low_cut_freq: float, high_cut_freq: float, filter_order: int 
 
 def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
     """
-    The signal should be of shape (input_length, 12).
-    Pad or truncate (in time or channels) if shorter or longer.
+    Ensure the signal is of shape (input_length, 12) using center padding or truncation.
     """
     if signal.ndim != 2:
         raise ValueError(f"Expected signal with 2 dimensions (time, channels), got shape {signal.shape}")
 
-    orig_length, orig_channels = signal.shape
-    padded_signal = np.zeros((input_length, 12), dtype=signal.dtype)
-    length_to_copy = min(orig_length, input_length)
-    channels_to_copy = min(orig_channels, 12)
-    padded_signal[:length_to_copy, :channels_to_copy] = signal[:length_to_copy, :channels_to_copy]
+    signal = _adjust_length(signal, input_length)
+    signal = _adjust_channels(signal, target_channels=12)
+    return signal
 
-    return padded_signal
+
+def _adjust_length(signal: np.ndarray, target_length: int) -> np.ndarray:
+    current_length = signal.shape[0]
+    if current_length > target_length:
+        start = (current_length - target_length) // 2
+        return signal[start:start + target_length]
+    elif current_length < target_length:
+        pad_total = target_length - current_length
+        pad_before = pad_total // 2
+        pad_after = pad_total - pad_before
+        return np.pad(signal, ((pad_before, pad_after), (0, 0)), mode='constant')
+    return signal
+
+
+def _adjust_channels(signal: np.ndarray, target_channels: int) -> np.ndarray:
+    current_channels = signal.shape[1]
+    if current_channels > target_channels:
+        return signal[:, :target_channels]
+    elif current_channels < target_channels:
+        padded = np.zeros((signal.shape[0], target_channels), dtype=signal.dtype)
+        padded[:, :current_channels] = signal
+        return padded
+    return signal
 
 
 def resample_signal(original_signal: np.ndarray, original_fs: int, new_fs: int):
