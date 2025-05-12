@@ -1,10 +1,11 @@
-command:
-  - "python custom_train.py"
+program: "./partial_train_flow.py"
 
 method: random
+
 metric:
   name: "challenge_score"
   goal: "maximize"
+
 parameters:
   model__learning_rate: { distribution: log_uniform_values, min: 1e-8, max: 0.1 }
 
