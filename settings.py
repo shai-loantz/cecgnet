@@ -168,13 +168,13 @@ class Config(BaseSettings):
     def update_wandb_config(self, wandb_config: dict):
         for key, value in wandb_config.items():
             keys = key.split('__')
+            # if key can be seperated by __ once assumes that it's a key of a base config
             if len(keys) == 1 and hasattr(self, key):
                 setattr(self, key, value)
             elif len(keys) == 2 and hasattr(self, keys[0]):
                 attr = getattr(self, keys[0])
                 if hasattr(attr, keys[1]):
                     setattr(attr, keys[1], value)
-
 
     def get_wandb_params(self) -> dict:
         return {

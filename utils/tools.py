@@ -59,7 +59,7 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
             config.update_wandb_config(wandb.config)
         wandb.config.update(config, allow_val_change=True)
         for key, value in config.get_wandb_params().items():
-            wandb.config.update({key : value}, allow_val_change=True)
+            wandb.config.update({key: value}, allow_val_change=True)
             # print(f"  {key}: {value}")
 
         # wandb.run.log_code(".")
