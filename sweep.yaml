@@ -1,0 +1,14 @@
+command:
+  - "python custom_train.py"
+
+method: random
+metric:
+  name: "challenge_score"
+  goal: "maximize"
+parameters:
+  model__learning_rate: { distribution: log_uniform_values, min: 1e-8, max: 0.1 }
+
+
+early_terminate:
+  type: "hyperband"
+  min_iter: 10

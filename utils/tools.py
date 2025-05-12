@@ -49,6 +49,23 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
                 trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
 
 
+def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
+    if is_main_proc():
+        # first init is for getting parameters from sweep to update config
+        wandb.init(project='cecgnet')
+        if wandb.run is not None and list(wandb.config.keys()):
+            for key, value in wandb.config.items():
+                if hasattr(config, key):
+                    setattr(config, key, value)
+
+        run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
+        wandb.init(project='cecgnet', name=run_name, reinit=True, config=config.get_wandb_params())
+        wandb.run.log_code(".")
+        set_run_id(wandb.run.id)
+        # please notice that only before you call wandb.finish it will be correctly associated with the sweep
+    return config
+
+
 def restart_wandb_run(config: Config, run_postfix: str) -> None:
     if is_main_proc():
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
