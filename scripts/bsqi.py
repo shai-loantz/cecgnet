@@ -29,13 +29,12 @@ def main():
     config = Config()
     dataset = ECGDataset(config.data.data_folder, config.data.input_length, config.pre_process)
     print('Iterating')
-    for idx in tqdm(dataset.record_files):
-        record_file_name = dataset.record_files[idx]
+    for record_file_name in tqdm(dataset.record_files):
         signal, fields = load_signals(record_file_name)
         signal = preprocess(signal, fields['sig_name'], fields['fs'],
                             config.pre_process.input_length, config.pre_process)
         if not is_ecg_acceptable(signal, config.pre_process.resample_freq):
-            bad_signal_ids.append(idx)
+            bad_signal_ids.append(record_file_name)
 
     print(f'Done. Found {len(bad_signal_ids)} bad signals. Writing to bad_signal_ids.txt')
     with open('bad_signal_ids.txt', 'w') as fh:
