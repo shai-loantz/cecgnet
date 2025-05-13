@@ -3,6 +3,7 @@ import os
 import sys
 from multiprocessing import Pool, cpu_count
 
+import matplotlib.pyplot as plt
 import numpy as np
 from pecg.Preprocessing import Preprocessing
 from tqdm import tqdm
@@ -38,7 +39,18 @@ def is_ecg_acceptable(signal: np.ndarray, fs: float) -> bool:
     return (np.sum(good_leads) >= MIN_GOOD_LEADS) and (np.sum(bad_leads) <= MAX_BAD_LEADS)
 
 
-def process_record(record_file_name):
+def get_mean_bsqi(record_file_name: str) -> float | None:
+    config = Config()
+    signal, fields = load_signals(record_file_name)
+    signal = preprocess(signal, fields['sig_name'], fields['fs'],
+                        config.data.input_length, config.pre_process)
+    pre = Preprocessing(signal, config.pre_process.resample_freq)
+    with HiddenPrints():
+        bsqi_per_lead = pre.bsqi()
+    return bsqi_per_lead.mean()
+
+
+def process_record(record_file_name: str) -> str | None:
     config = Config()
     try:
         signal, fields = load_signals(record_file_name)
@@ -49,6 +61,24 @@ def process_record(record_file_name):
     except Exception:
         return record_file_name  # Consider failed records as bad
     return None
+
+
+def plot_histogram():
+    print('Setting up')
+    config = Config()
+    dataset = ECGDataset(config.data.data_folder, config.data.input_length, config.pre_process)
+    record_files = dataset.record_files
+
+    print(f'Iterating using {NUM_WORKERS}/{cpu_count()} workers')
+    bsqi = []
+    with Pool(processes=NUM_WORKERS) as pool:
+        for result in tqdm(pool.imap_unordered(get_mean_bsqi, record_files), total=len(record_files)):
+            if result is not None:
+                bsqi.append(result)
+
+    bsqi = np.array(bsqi)
+    plt.hist(bsqi)
+    plt.show()
 
 
 def main():
@@ -64,7 +94,8 @@ def main():
             if result is not None:
                 bad_signal_ids.append(result)
 
-    print(f'Done. Found {len(bad_signal_ids)} bad signals. Writing to bad_signal_ids.txt')
+    print(f'Done. Found {len(bad_signal_ids)} bad signals which are {len(bad_signal_ids) * 100 / len(record_files)}%. '
+          f'Writing to bad_signal_ids.txt')
     with open('bad_signal_ids.txt', 'w') as fh:
         json.dump(bad_signal_ids, fh)
 
