@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 from pecg.Preprocessing import Preprocessing
@@ -10,6 +11,12 @@ from data_tools.data_set import ECGDataset
 from data_tools.preprocess import preprocess
 from helper_code import load_signals
 from settings import Config
+
+GOOD_THRESHOLD = 0.75
+BAD_THRESHOLD = 0.2
+MIN_GOOD_LEADS = 8
+MAX_BAD_LEADS = 1
+NUM_WORKERS = 32
 
 
 class HiddenPrints:
@@ -22,32 +29,40 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
-def is_ecg_acceptable(signal: np.ndarray, fs: float,
-                      good_threshold=0.8,
-                      min_good_leads=8,
-                      bad_lead_threshold=0.2,
-                      max_bad_leads=1):
+def is_ecg_acceptable(signal: np.ndarray, fs: float) -> bool:
     pre = Preprocessing(signal, int(fs))
     with HiddenPrints():
         bsqi_per_lead = pre.bsqi()
-    good_leads = bsqi_per_lead > good_threshold
-    bad_leads = bsqi_per_lead < bad_lead_threshold
+    good_leads = bsqi_per_lead > GOOD_THRESHOLD
+    bad_leads = bsqi_per_lead < BAD_THRESHOLD
+    return (np.sum(good_leads) >= MIN_GOOD_LEADS) and (np.sum(bad_leads) <= MAX_BAD_LEADS)
 
-    return (np.sum(good_leads) >= min_good_leads) and (np.sum(bad_leads) <= max_bad_leads)
 
-
-def main():
-    print('Setting up')
-    bad_signal_ids = []
+def process_record(record_file_name):
     config = Config()
-    dataset = ECGDataset(config.data.data_folder, config.data.input_length, config.pre_process)
-    print('Iterating')
-    for record_file_name in tqdm(dataset.record_files):
+    try:
         signal, fields = load_signals(record_file_name)
         signal = preprocess(signal, fields['sig_name'], fields['fs'],
                             config.data.input_length, config.pre_process)
         if not is_ecg_acceptable(signal, config.pre_process.resample_freq):
-            bad_signal_ids.append(record_file_name)
+            return record_file_name
+    except Exception:
+        return record_file_name  # Consider failed records as bad
+    return None
+
+
+def main():
+    print('Setting up')
+    config = Config()
+    dataset = ECGDataset(config.data.data_folder, config.data.input_length, config.pre_process)
+    record_files = dataset.record_files
+
+    print(f'Iterating using {NUM_WORKERS}/{cpu_count()} workers')
+    bad_signal_ids = []
+    with Pool(processes=NUM_WORKERS) as pool:
+        for result in tqdm(pool.imap_unordered(process_record, record_files), total=len(record_files)):
+            if result is not None:
+                bad_signal_ids.append(result)
 
     print(f'Done. Found {len(bad_signal_ids)} bad signals. Writing to bad_signal_ids.txt')
     with open('bad_signal_ids.txt', 'w') as fh:
