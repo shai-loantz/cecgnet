@@ -32,7 +32,7 @@ def main():
     for record_file_name in tqdm(dataset.record_files):
         signal, fields = load_signals(record_file_name)
         signal = preprocess(signal, fields['sig_name'], fields['fs'],
-                            config.pre_process.input_length, config.pre_process)
+                            config.data.input_length, config.pre_process)
         if not is_ecg_acceptable(signal, config.pre_process.resample_freq):
             bad_signal_ids.append(record_file_name)
 
