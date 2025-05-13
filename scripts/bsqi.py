@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 
 import numpy as np
 from pecg.Preprocessing import Preprocessing
@@ -10,13 +12,24 @@ from helper_code import load_signals
 from settings import Config
 
 
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+
+
 def is_ecg_acceptable(signal: np.ndarray, fs: float,
                       good_threshold=0.8,
                       min_good_leads=8,
                       bad_lead_threshold=0.2,
                       max_bad_leads=1):
     pre = Preprocessing(signal, int(fs))
-    bsqi_per_lead = pre.bsqi()
+    with HiddenPrints():
+        bsqi_per_lead = pre.bsqi()
     good_leads = bsqi_per_lead > good_threshold
     bad_leads = bsqi_per_lead < bad_lead_threshold
 
