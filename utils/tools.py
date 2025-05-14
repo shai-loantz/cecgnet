@@ -57,9 +57,9 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
         wandb.init(project='cecgnet', name=run_name, resume=True)
         if wandb.run is not None and list(wandb.config.keys()):
             config.update_wandb_config(wandb.config)
-        wandb.config.update(config, allow_val_change=True)
-        for key, value in config.get_wandb_params().items():
-            wandb.config.update({key: value}, allow_val_change=True)
+        # wandb.config.update(config, allow_val_change=True)
+        # for key, value in config.get_wandb_params().items():
+        #     wandb.config.update({key: value}, allow_val_change=False)
             # print(f"  {key}: {value}")
 
         # wandb.run.log_code(".")

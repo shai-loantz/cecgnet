@@ -6,16 +6,19 @@ from torch import set_float32_matmul_precision
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.tools import train, restart_wandb_run, load_model, test, get_model_from_checkpoint
+from utils.tools import train, restart_wandb_run, load_model, test, get_model_from_checkpoint, start_wandb_sweep
 
 set_float32_matmul_precision('high')
 seed_everything(42)
-config = Config()
 RUN_POSTFIX = secrets.token_hex(2)
 
 
 def main():
-    restart_wandb_run(config, RUN_POSTFIX)
+    config = Config()
+    if config.manual_config:
+        restart_wandb_run(config, RUN_POSTFIX)
+    else:
+        config = start_wandb_sweep(config, RUN_POSTFIX)
     if config.pretraining:
         logger.info('Pre-training')
         model = MODELS.get(config.model_name)(config.pre_model)
