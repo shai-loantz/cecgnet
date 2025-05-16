@@ -63,7 +63,7 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
         wandb.init(settings=Settings(console="off"), name=run_name, resume=True)
         for key, value in config.get_wandb_params().items():
             wandb.config.update({key: value}, allow_val_change=False)
-        # wandb.run.log_code(".")
+        wandb.run.log_code(".")
         set_run_id(wandb.run.id)
         # please notice that sweep will only work with a single run and not pretraining + fine tuning
     return config
@@ -74,7 +74,7 @@ def restart_wandb_run(config: Config, run_postfix: str) -> None:
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
         wandb.finish()
         wandb.init(project='cecgnet', name=run_name, reinit=True, config=config.get_wandb_params())
-        # wandb.run.log_code(".")
+        wandb.run.log_code(".")
         set_run_id(wandb.run.id)
 
 
