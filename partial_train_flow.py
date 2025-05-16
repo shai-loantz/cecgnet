@@ -21,7 +21,7 @@ def main() -> None:
     else:
         config = start_wandb_sweep(config, RUN_POSTFIX)
     model = MODELS[config.model_name](config.pre_model)
-    train(model, config, use_pretraining=False)
+    train(model, config, use_pretraining=True)
     test(config)
 
 
