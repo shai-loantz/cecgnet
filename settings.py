@@ -184,12 +184,12 @@ class Config(BaseSettings):
             'model': self.model.model_dump(),
             'model_folder': self.model_folder,
             'pretraining': self.pretraining,
-            'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
         }
         if self.pretraining:
-            params.update({'pre_trainer_config': self.pre_trainer_config.model_dump(),
+            params.update({'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
+                           'pre_trainer_config': self.pre_trainer_config.model_dump(),
                            'pre_trainer': self.pre_trainer.model_dump(),
                            'pre_model': self.pre_model.model_dump(),
                            'pre_data': self.pre_data.model_dump(), })
