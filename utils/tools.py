@@ -3,6 +3,7 @@ from ast import literal_eval
 
 import wandb
 from lightning import Trainer
+from wandb import Settings
 
 from data_tools.data_module import DataModule
 from models import Model, MODELS
@@ -22,9 +23,9 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
 
     logger.info('Training')
     trainer.fit(model, datamodule=data_module)
-    # logger.info('Training completed. Aggregating validation metrics')
-    # log_metrics(trainer, config.model.threshold)
-    # logger.info('Done aggregating validation metrics')
+    logger.info('Training completed. Aggregating validation metrics')
+    log_metrics(trainer, config.model.threshold)
+    logger.info('Done aggregating validation metrics')
 
 
 def test(config: Config) -> None:
@@ -35,7 +36,7 @@ def test(config: Config) -> None:
     tester = Trainer(**test_params)
     logger.info(f'Testing')
     tester.test(model=model, datamodule=data_module)
-    # logger.info('Done testing')
+    logger.info('Done testing')
 
 
 def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig):
@@ -56,20 +57,15 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
     if is_main_proc():
         wandb_config = parse_wandb_sweep()
         config.update_wandb_config(wandb_config)
-        # first init is for getting parameters from sweep to update config
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
-        wandb.init(name=run_name, config=config.get_wandb_params(), resume=True)
-        # if wandb.run is not None and list(wandb.config.keys()):
-        #     config.update_wandb_config(wandb.config)
-        # wandb.config.update(config, allow_val_change=True)
-        # print(config.get_wandb_params())
-        # for key, value in config.get_wandb_params().items():
-        #     wandb.config.update({key: value}, allow_val_change=False)
-            # print(f"  {key}: {value}")
-
+        # right now the sweep doesn't work with logs transferred to wandb correctly, from what i gather this happens
+        # because of logger still writing things after the run finishes and wandb starts an endless loop
+        wandb.init(settings=Settings(console="off"), name=run_name, resume=True)
+        for key, value in config.get_wandb_params().items():
+            wandb.config.update({key: value}, allow_val_change=False)
         # wandb.run.log_code(".")
         set_run_id(wandb.run.id)
-        # please notice that only before you call wandb.finish it will be correctly associated with the sweep
+        # please notice that sweep will only work with a single run and not pretraining + fine tuning
     return config
 
 
@@ -90,6 +86,7 @@ def get_model_from_checkpoint(config: Config) -> Model:
         raise Exception('No checkpoint was saved')
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
+
 
 def parse_wandb_sweep() -> dict:
     parser = argparse.ArgumentParser()
