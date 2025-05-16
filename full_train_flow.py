@@ -21,7 +21,7 @@ def main():
         config = start_wandb_sweep(config, RUN_POSTFIX)
     if config.pretraining:
         logger.info('Pre-training')
-        model = MODELS.get(config.model_name)(config.pre_model)
+        model = MODELS[config.model_name](config.pre_model)
         train(model, config, use_pretraining=True)
         model = get_model_from_checkpoint(config)
         test(config)
@@ -35,7 +35,7 @@ def main():
             model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)
         except:
             logger.debug('load pre-training failed')
-            model = MODELS.get(config.model_name)(config.model)
+            model = MODELS[config.model_name](config.model)
     logger.info('Fine-tuning')
     train(model, config)
     test(config)
