@@ -193,4 +193,4 @@ class Config(BaseSettings):
                            'pre_trainer': self.pre_trainer.model_dump(),
                            'pre_model': self.pre_model.model_dump(),
                            'pre_data': self.pre_data.model_dump(), })
-            return params
+        return params

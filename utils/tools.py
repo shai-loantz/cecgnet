@@ -1,3 +1,6 @@
+import argparse
+from ast import literal_eval
+
 import wandb
 from lightning import Trainer
 
@@ -21,7 +24,7 @@ def train(model: Model, config: Config, use_wandb: bool = True, use_pretraining:
     trainer.fit(model, datamodule=data_module)
     # logger.info('Training completed. Aggregating validation metrics')
     # log_metrics(trainer, config.model.threshold)
-    logger.info('Done aggregating validation metrics')
+    # logger.info('Done aggregating validation metrics')
 
 
 def test(config: Config) -> None:
@@ -32,7 +35,7 @@ def test(config: Config) -> None:
     tester = Trainer(**test_params)
     logger.info(f'Testing')
     tester.test(model=model, datamodule=data_module)
-    logger.info('Done testing')
+    # logger.info('Done testing')
 
 
 def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig):
@@ -51,13 +54,15 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
 
 def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
     if is_main_proc():
-        wandb.finish()
+        wandb_config = parse_wandb_sweep()
+        config.update_wandb_config(wandb_config)
         # first init is for getting parameters from sweep to update config
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
-        wandb.init(project='cecgnet', name=run_name, resume=True)
-        if wandb.run is not None and list(wandb.config.keys()):
-            config.update_wandb_config(wandb.config)
+        wandb.init(name=run_name, config=config.get_wandb_params(), resume=True)
+        # if wandb.run is not None and list(wandb.config.keys()):
+        #     config.update_wandb_config(wandb.config)
         # wandb.config.update(config, allow_val_change=True)
+        # print(config.get_wandb_params())
         # for key, value in config.get_wandb_params().items():
         #     wandb.config.update({key: value}, allow_val_change=False)
             # print(f"  {key}: {value}")
@@ -73,7 +78,7 @@ def restart_wandb_run(config: Config, run_postfix: str) -> None:
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
         wandb.finish()
         wandb.init(project='cecgnet', name=run_name, reinit=True, config=config.get_wandb_params())
-        wandb.run.log_code(".")
+        # wandb.run.log_code(".")
         set_run_id(wandb.run.id)
 
 
@@ -85,3 +90,20 @@ def get_model_from_checkpoint(config: Config) -> Model:
         raise Exception('No checkpoint was saved')
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model)
+
+def parse_wandb_sweep() -> dict:
+    parser = argparse.ArgumentParser()
+    _, unknown = parser.parse_known_args()
+    dynamic_args = {}
+    for arg in unknown:
+        if arg.startswith("--"):
+            # Format: --key=value or --key value
+            if '=' in arg:
+                key, raw_value = arg.lstrip('-').split('=', 1)
+                value = literal_eval(raw_value)
+            else:
+                key = arg.lstrip('-')
+                value = True  # flag without value
+            dynamic_args[key] = value
+
+    return dynamic_args
