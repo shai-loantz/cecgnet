@@ -172,19 +172,32 @@ class Config(BaseSettings):
         self.data.data_folder = data_folder
         self.model_folder = model_folder
 
+    def update_wandb_config(self, wandb_config: dict):
+        for key, value in wandb_config.items():
+            keys = key.split('__')
+            # if key can be seperated by __ once assumes that it's a key of a base config
+            if len(keys) == 1 and hasattr(self, key):
+                setattr(self, key, value)
+            elif len(keys) == 2 and hasattr(self, keys[0]):
+                attr = getattr(self, keys[0])
+                if hasattr(attr, keys[1]):
+                    setattr(attr, keys[1], value)
+
     def get_wandb_params(self) -> dict:
-        return {
+        params = {
             'trainer': self.get_trainer_params(),
             'data': self.data.model_dump(),
             'pre_process': self.pre_process.model_dump(),
             'model': self.model.model_dump(),
             'model_folder': self.model_folder,
             'pretraining': self.pretraining,
-            'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
-            'pre_trainer_config': self.pre_trainer_config.model_dump(),
-            'pre_trainer': self.pre_trainer.model_dump(),
-            'pre_model': self.pre_model.model_dump(),
-            'pre_data': self.pre_data.model_dump(),
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
         }
+        if self.pretraining:
+            params.update({'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
+                           'pre_trainer_config': self.pre_trainer_config.model_dump(),
+                           'pre_trainer': self.pre_trainer.model_dump(),
+                           'pre_model': self.pre_model.model_dump(),
+                           'pre_data': self.pre_data.model_dump(), })
+        return params

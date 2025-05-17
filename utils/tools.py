@@ -1,11 +1,15 @@
+import argparse
+from ast import literal_eval
+
 import wandb
 from lightning import Trainer
+from wandb import Settings
 
 from data_tools.data_module import DataModule
 from models import Model, MODELS
 from settings import Config, ModelConfig, ModelName, AugmentationsConfig
 from utils.ddp import is_main_proc
-from utils.logger import logger
+from utils.logger import logger, LOG_DIR
 from utils.metrics import calculate_metrics_per_epoch
 from utils.run_id import get_run_id, set_run_id
 
@@ -49,6 +53,23 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
                 trainer.logger.experiment.log({metric_name: value, "epoch": epoch})
 
 
+def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
+    if is_main_proc():
+        wandb_config = parse_wandb_sweep()
+        config.update_wandb_config(wandb_config)
+        run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
+        # right now the sweep doesn't work with logs transferred to wandb correctly, from what i gather this happens
+        # because of logger still writing things after the run finishes and wandb starts an endless loop
+        wandb.init(settings=Settings(console="off"), name=run_name, resume=True)
+        for key, value in config.get_wandb_params().items():
+            wandb.config.update({key: value}, allow_val_change=False)
+        wandb.config.update({"logs_dir": LOG_DIR})
+        wandb.run.log_code(".")
+        set_run_id(wandb.run.id)
+        # please notice that sweep will only work with a single run and not pretraining + fine tuning
+    return config
+
+
 def restart_wandb_run(config: Config, run_postfix: str) -> None:
     if is_main_proc():
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
@@ -66,3 +87,21 @@ def get_model_from_checkpoint(config: Config) -> Model:
         raise Exception('No checkpoint was saved')
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model, augmentations=config.augmentations)
+
+
+def parse_wandb_sweep() -> dict:
+    parser = argparse.ArgumentParser()
+    _, unknown = parser.parse_known_args()
+    dynamic_args = {}
+    for arg in unknown:
+        if arg.startswith("--"):
+            # Format: --key=value or --key value
+            if '=' in arg:
+                key, raw_value = arg.lstrip('-').split('=', 1)
+                value = literal_eval(raw_value)
+            else:
+                key = arg.lstrip('-')
+                value = True  # flag without value
+            dynamic_args[key] = value
+
+    return dynamic_args
