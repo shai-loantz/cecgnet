@@ -1,12 +1,12 @@
 from torch import nn
 
 from models import Model
-from settings import ModelConfig
+from settings import ModelConfig, AugmentationsConfig
 
 
 class Small(Model):
-    def __init__(self, config: ModelConfig):
-        super(Small, self).__init__(config)
+    def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig):
+        super(Small, self).__init__(config, augmentations)
         self.conv_layers = nn.Sequential(
             nn.Conv1d(config.input_channels, 64, kernel_size=3, padding=1), nn.ReLU(),
             nn.Conv1d(64, 64, kernel_size=3, padding=1), nn.ReLU(),
