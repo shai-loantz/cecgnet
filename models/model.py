@@ -7,19 +7,21 @@ from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 
-from settings import ModelConfig
+from data_tools.augmentations import get_augmentations
+from settings import ModelConfig, AugmentationsConfig
 from utils.logger import setup_logger, logger
 from utils.metrics import calculate_metrics
 
 
 class Model(LightningModule):
-    def __init__(self, config: ModelConfig) -> None:
+    def __init__(self, config: ModelConfig, augmentations:AugmentationsConfig) -> None:
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
         self.targets: list[Tensor] = []
         self.outputs: list[Tensor] = []
+        self.augmentations = get_augmentations(augmentations, config.input_channels)
 
     def setup(self, stage=None):
         if self.our_logger is None:
@@ -28,6 +30,7 @@ class Model(LightningModule):
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
         inputs, targets = batch
+        inputs = self.augmentations(inputs)
         loss, _, _ = self._run_batch([inputs, targets], 'train')
         return loss
 

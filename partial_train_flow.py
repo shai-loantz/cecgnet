@@ -17,7 +17,7 @@ def main() -> None:
     This flow consists of training on the "pre-training" data set and then testing on the "fine-tuning" database.
     """
     restart_wandb_run(config, RUN_POSTFIX)
-    model = MODELS[config.model_name](config.pre_model)
+    model = MODELS[config.model_name](config.pre_model, config.augmentations)
     train(model, config, use_pretraining=True)
     test(config)
 

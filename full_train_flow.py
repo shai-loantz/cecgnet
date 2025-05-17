@@ -28,8 +28,7 @@ def main():
         restart_wandb_run(config, RUN_POSTFIX)
         logger.info('Pre-training completed')
     else:  # load from pretrained model
-        model = load_model(config.pretraining_checkpoint_path,
-                           config.model_name, config.model)
+        model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model, config.augmentations)
     logger.info('Fine-tuning')
     train(model, config)
     test(config)

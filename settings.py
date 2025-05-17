@@ -61,11 +61,17 @@ class PreprocessConfig(BaseModel):
     resample_freq: int
     low_cut_freq: float
     high_cut_freq: float
+    random_edge_cut: bool = False
 
 
 class TrainerConfig(BaseConfig):
     max_epochs: int = 30
     accumulate_grad_batches: int = 16
+
+
+class AugmentationsConfig(BaseConfig):
+    random_apply: float = 1
+    channel_erase: bool = False
 
 
 class LightningConfig(BaseModel):
@@ -102,6 +108,7 @@ class Config(BaseSettings):
     pre_process: PreprocessConfig
     model: ModelConfig
     model_folder: str = 'checkpoints'
+    augmentations: AugmentationsConfig
 
     # pre training settings
     pretraining: bool
