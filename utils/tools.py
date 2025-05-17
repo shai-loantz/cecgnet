@@ -9,7 +9,7 @@ from data_tools.data_module import DataModule
 from models import Model, MODELS
 from settings import Config, ModelConfig, ModelName
 from utils.ddp import is_main_proc
-from utils.logger import logger
+from utils.logger import logger, LOG_DIR
 from utils.metrics import calculate_metrics_per_epoch
 from utils.run_id import get_run_id, set_run_id
 
@@ -63,6 +63,7 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
         wandb.init(settings=Settings(console="off"), name=run_name, resume=True)
         for key, value in config.get_wandb_params().items():
             wandb.config.update({key: value}, allow_val_change=False)
+        wandb.config.update({"logs_dir": LOG_DIR})
         wandb.run.log_code(".")
         set_run_id(wandb.run.id)
         # please notice that sweep will only work with a single run and not pretraining + fine tuning
