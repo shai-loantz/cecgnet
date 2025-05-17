@@ -20,7 +20,7 @@ class ChannelErase:
         self.p = p
         self.channel_to_drop = channel_to_drop
 
-    def __call__(self, x):  # TODO: do i need clone?
+    def __call__(self, x):
         if not torch.is_tensor(x):
             raise TypeError("Input must be a torch.Tensor")
         if x.shape[-2] != self.channels:
