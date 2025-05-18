@@ -13,13 +13,14 @@ class SimpleResNet(Model):
         self.tail = get_tail_module(config.input_channels)
         self.resnet_blocks = get_resnet_blocks(self.layer_conf)
         self.gap = nn.AdaptiveAvgPool1d(1)
-        self.head = get_head_module(self.layer_conf)
+        self.head = get_head_module(self.layer_conf, self.config.add_metadata_end)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.tail(x)
         for block in self.resnet_blocks:
             x = block(x)
         x = self.gap(x).squeeze(-1)
+        x = self.add_metadata(x, metadata) if self.config.add_metadata_end else x
         return self.head(x)
 
 

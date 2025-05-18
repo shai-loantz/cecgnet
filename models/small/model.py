@@ -1,4 +1,4 @@
-from torch import nn
+from torch import nn, Tensor
 
 from models import Model
 from settings import ModelConfig, AugmentationsConfig
@@ -16,14 +16,16 @@ class Small(Model):
             nn.Conv1d(128, 128, kernel_size=3, padding=1), nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2),
         )
-
+        fc_in_features = 29824
+        if config.add_metadata_end: fc_in_features += 2
         self.fc_layers = nn.Sequential(
-            nn.Linear(29824, 1),
+            nn.Linear(fc_in_features, 1),
         )
 
-    def forward(self, x):
+    def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)  # Flatten
+        x = self.add_metadata(x, metadata) if self.config.add_metadata_end else x
         x = self.fc_layers(x)
         return x
 

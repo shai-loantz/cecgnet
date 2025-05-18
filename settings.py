@@ -90,7 +90,7 @@ class ModelConfig(BaseConfig):
     use_weighted_loss: bool = True
     positive_prevalence: float
     warmup_steps: int = 1000
-
+    add_metadata_end: bool = True
     attention: Attention = Attention.SelfAttention
 
 

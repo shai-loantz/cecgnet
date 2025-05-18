@@ -14,13 +14,14 @@ class ResNetAttention(Model):
         self.tail = get_attention_tail(config.input_channels, config.attention)
         self.layers = get_attention_layers(self.layer_conf, config.attention)
         self.gap = nn.AdaptiveAvgPool1d(1)
-        self.head = get_head_module(self.layer_conf)
+        self.head = get_head_module(self.layer_conf, config.add_metadata_end)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.tail(x)
         for layer in self.layers:
             x = layer(x)
         x = self.gap(x).squeeze(-1)
+        x = self.add_metadata(x, metadata) if self.config.add_metadata_end else x
         return self.head(x)
 
 
