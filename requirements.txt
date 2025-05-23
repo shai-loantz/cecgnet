@@ -1,8 +1,9 @@
 torch==2.6.0
+torchvision==0.21.0
 lightning~=2.5.0.post0
 requests>=2.32.0
 tqdm
-wandb
+wandb==0.19.7
 pydantic~=2.10.6
 pydantic-settings
 numpy==2.0.2

@@ -58,9 +58,7 @@ def start_wandb_sweep(config: Config, run_postfix: str) -> Config:
         wandb_config = parse_wandb_sweep()
         config.update_wandb_config(wandb_config)
         run_name = f'{config.get_checkpoint_name()}_{run_postfix}'
-        # right now the sweep doesn't work with logs transferred to wandb correctly, from what i gather this happens
-        # because of logger still writing things after the run finishes and wandb starts an endless loop
-        wandb.init(settings=Settings(console="off"), name=run_name, resume=True)
+        wandb.init(name=run_name, resume=True)
         for key, value in config.get_wandb_params().items():
             wandb.config.update({key: value}, allow_val_change=False)
         wandb.config.update({"logs_dir": LOG_DIR})
