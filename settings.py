@@ -193,6 +193,7 @@ class Config(BaseSettings):
             'pretraining': self.pretraining,
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
+            'augmentations': self.augmentations.model_dump(),
         }
         if self.pretraining:
             params.update({'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
