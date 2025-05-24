@@ -245,10 +245,13 @@ def compute_challenge_score(labels, outputs, max_fraction_positive = 0.05):
         if tp[j] + fp[j] > max_num_positive_instances:
             k = j - 1
             break
-
-    if tp[k] + fn[k] > 0:
-        tpr = tp[k] / (tp[k] + fn[k])
-    else:
+    # TODO: delete try
+    try:
+        if tp[k] + fn[k] > 0:
+            tpr = tp[k] / (tp[k] + fn[k])
+        else:
+            tpr = float('nan')
+    except (IndexError, TypeError):
         tpr = float('nan')
 
     return tpr
