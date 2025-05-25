@@ -1,8 +1,8 @@
 from torch import Tensor, nn
 
 from models.model import Model
-from models.resnet.utils import get_head_module, LayerConf
-from models.resnet_attention.utils import get_attention_layers, get_attention_tail
+from models.resnet.utils import get_head_module, LayerConf, get_tail_module
+from models.resnet_attention.utils import get_attention_layers
 from settings import ModelConfig, AugmentationsConfig
 
 
@@ -11,7 +11,7 @@ class ResNetAttention(Model):
 
     def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig) -> None:
         super().__init__(config, augmentations)
-        self.tail = get_attention_tail(config.input_channels, config.attention)
+        self.tail = get_tail_module(config.input_channels)
         self.layers = get_attention_layers(self.layer_conf, config.attention)
         self.gap = nn.AdaptiveAvgPool1d(1)
         self.head = get_head_module(self.layer_conf, config.add_metadata_end)
