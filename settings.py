@@ -166,7 +166,7 @@ class Config(BaseSettings):
 
     def get_checkpoint_name(self) -> str:
         name = self.checkpoint_name or self.model_name.value
-        return f'pretraining_{name}' if self.pretraining else name
+        return f'pre_{name}' if self.pretraining else name
 
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder
