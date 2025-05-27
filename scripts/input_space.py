@@ -70,10 +70,7 @@ def process_record(record_file_name: str, input_length: int, pre_process: Prepro
 
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
-    """
-    (N, C) -> (N, 3)
-    C is 934*12 (input space) or 1088 (feature space)
-    """
+    print('Reducing')
     if method == 'umap':
         reducer = umap.UMAP(n_components=3, random_state=42)
     elif method == 'tsne':
@@ -111,7 +108,6 @@ def main() -> None:
     print('Getting inputs')
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
-    print('Reducing')
     embeddings = reduce(x_flat)
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
 

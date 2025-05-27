@@ -17,7 +17,7 @@ def get_model_from_checkpoint() -> Model:
 
 # Specific to ResNet!!!
 def cnn_forward(model, x: Tensor) -> np.ndarray:
-    x.device = next(model.parameters()).device
+    x = x.to(next(model.parameters()).device)
     x = model.tail(x)
     for block in model.resnet_blocks:
         x = block(x)
