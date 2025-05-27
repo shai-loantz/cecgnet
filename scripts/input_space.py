@@ -1,3 +1,6 @@
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+
 import numpy as np
 import umap
 from matplotlib import pyplot as plt
@@ -6,7 +9,7 @@ from sklearn.manifold import TSNE
 from data_tools.data_set import ECGDataset
 from data_tools.preprocess import preprocess
 from helper_code import load_signals
-from settings import Config
+from settings import Config, PreprocessConfig
 
 CODE_15_PATH = ''
 PTBXL_PATH = ''
@@ -46,13 +49,20 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
     Returns shape (N, 12, 934)
     """
     dataset = ECGDataset(folder_path, config.data.input_length, config.pre_process)
-    signals = []
-    for record_file_name in dataset.record_files:
-        signal, fields = load_signals(record_file_name)
-        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.data.input_length, config.pre_process)
-        signals.append(preprocessed.T)
+    input_length = config.data.input_length
+    pre_process = config.pre_process
+
+    with ProcessPoolExecutor() as executor:
+        process_func = partial(process_record, input_length=input_length, pre_process=pre_process)
+        signals = list(executor.map(process_func, dataset.record_files))
 
     return np.stack(signals, axis=0)
+
+
+def process_record(record_file_name: str, input_length: int, pre_process: PreprocessConfig) -> np.ndarray:
+    signal, fields = load_signals(record_file_name)
+    preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], input_length, pre_process)
+    return preprocessed.T
 
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
