@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from torch import Tensor, tensor
 
 from models import Model, SimpleResNet
@@ -36,7 +37,7 @@ def main() -> None:
     plot(input_embeddings, dataset_labels, 'input_space_3d')
 
     model = get_model_from_checkpoint()
-    feature_space = cnn_forward(model, tensor(x))
+    feature_space = cnn_forward(model, tensor(x, dtype=torch.bfloat16))
     print(f'{feature_space.shape=}')
     feature_embeddings = reduce(feature_space)
     plot(feature_embeddings, dataset_labels, 'feature_space_3d_datasets')
