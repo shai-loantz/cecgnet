@@ -84,7 +84,7 @@ def main() -> None:
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
     print(f'{x.shape=}, {x_flat.shape=}, {dataset_labels.shape=}')
-    embeddings = reduce(x)
+    embeddings = reduce(x_flat)
     print(f'{embeddings.shape=}')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
 
