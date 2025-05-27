@@ -27,10 +27,10 @@ def cnn_forward(model, x: Tensor) -> np.ndarray:
 
 def main() -> None:
     x, dataset_labels = get_inputs()
-    print(f'{x.shape=}, {dataset_labels.shape=}')
+    print(f'{x.shape=}')
 
     x_flat = x.reshape(x.shape[0], -1)
-    print(f'{x.shape=}, {x_flat.shape=}, {dataset_labels.shape=}')
+    print(f'{x.shape=}, {x_flat.shape=}')
     input_embeddings = reduce(x_flat)
     print(f'{input_embeddings.shape=}')
     plot(input_embeddings, dataset_labels, 'input_space_3d')
