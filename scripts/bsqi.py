@@ -77,8 +77,9 @@ def plot_histogram():
                 bsqi.append(result)
 
     bsqi = np.array(bsqi)
-    plt.hist(bsqi)
-    plt.show()
+    plt.hist(bsqi, bins=500)
+    plt.savefig('hist.png')
+    print(f'Done. Mean was {bsqi.mean()}. Check out hist.png')
 
 
 def main():
