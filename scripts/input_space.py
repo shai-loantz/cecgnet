@@ -45,7 +45,7 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
     """
     Returns shape (N, 12, 934)
     """
-    dataset = ECGDataset(folder_path, config.data.input_length, config.preprocess_config)
+    dataset = ECGDataset(folder_path, config.data.input_length, config.pre_process)
     signals = []
     for record_file_name in dataset.record_files:
         signal, fields = load_signals(record_file_name)
