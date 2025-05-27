@@ -29,14 +29,17 @@ def get_inputs() -> tuple[np.ndarray, np.ndarray]:
     inputs_list = []
     dataset_list = []
 
+    print('Preprocessing SamiTrop')
     samitrop_inputs = get_dataset_inputs(SAMITROP_PATH)
     inputs_list.append(samitrop_inputs)
     dataset_list.append(np.ones((samitrop_inputs.shape[0],)) * SAMITROP_SYMBOL)
 
+    print('Preprocessing PTB-XL')
     ptbxl_inputs = get_dataset_inputs(PTBXL_PATH)
     inputs_list.append(ptbxl_inputs)
     dataset_list.append(np.ones((ptbxl_inputs.shape[0],)) * PTBXL_SYMBOL)
 
+    print('Preprocessing CODE-15%')
     code_15_inputs = get_dataset_inputs(CODE_15_PATH)
     inputs_list.append(code_15_inputs)
     dataset_list.append(np.ones((code_15_inputs.shape[0],)) * CODE_15_SYMBOL)
@@ -91,9 +94,11 @@ def plot(embeddings: np.ndarray, dataset_labels: np.ndarray, title: str) -> None
 
 
 def main() -> None:
+    print('Getting inputs')
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
     print(f'{x.shape=}, {x_flat.shape=}, {dataset_labels.shape=}')
+    print('Reducing')
     embeddings = reduce(x_flat)
     print(f'{embeddings.shape=}')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
