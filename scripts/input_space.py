@@ -49,7 +49,7 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
     signals = []
     for record_file_name in dataset.record_files:
         signal, fields = load_signals(record_file_name)
-        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.data.input_length, config.pre)
+        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.data.input_length, config.pre_process)
         signals.append(preprocessed.T)
 
     return np.stack(signals, axis=0)
