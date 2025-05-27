@@ -38,7 +38,7 @@ def get_inputs() -> tuple[np.ndarray, list]:
     print('Preprocessing PTB-XL')
     ptbxl_inputs = get_dataset_inputs(PTBXL_PATH)
     inputs_list.append(ptbxl_inputs)
-    dataset_list.extend([PTBXL_SYMBOL] * samitrop_inputs.shape[0])
+    dataset_list.extend([PTBXL_SYMBOL] * ptbxl_inputs.shape[0])
 
     #    print('Preprocessing CODE-15%')
     #    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
