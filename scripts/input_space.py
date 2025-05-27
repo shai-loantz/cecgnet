@@ -15,14 +15,14 @@ CODE_15_PATH = '/MLdata/shai/physionet2025/code15'
 PTBXL_PATH = '/MLdata/shai/physionet2025/ptbxl'
 SAMITROP_PATH = '/MLdata/shai/physionet2025/samitrop'
 
-CODE_15_SYMBOL = 0
-PTBXL_SYMBOL = 1
-SAMITROP_SYMBOL = 2
+CODE_15_SYMBOL = 'code15'
+PTBXL_SYMBOL = 'ptbxl'
+SAMITROP_SYMBOL = 'samitrop'
 
 config = Config()
 
 
-def get_inputs() -> tuple[np.ndarray, np.ndarray]:
+def get_inputs() -> tuple[np.ndarray, list]:
     """
     Returns shapes (N1+N2+N3, 12, 934) and (N1+N2+N3,)
     """
@@ -32,19 +32,19 @@ def get_inputs() -> tuple[np.ndarray, np.ndarray]:
     print('Preprocessing SamiTrop')
     samitrop_inputs = get_dataset_inputs(SAMITROP_PATH)
     inputs_list.append(samitrop_inputs)
-    dataset_list.append(np.ones((samitrop_inputs.shape[0],)) * SAMITROP_SYMBOL)
+    dataset_list.extend([SAMITROP_SYMBOL] * samitrop_inputs.shape[0])
 
     print('Preprocessing PTB-XL')
     ptbxl_inputs = get_dataset_inputs(PTBXL_PATH)
     inputs_list.append(ptbxl_inputs)
-    dataset_list.append(np.ones((ptbxl_inputs.shape[0],)) * PTBXL_SYMBOL)
+    dataset_list.extend([PTBXL_SYMBOL] * samitrop_inputs.shape[0])
 
     print('Preprocessing CODE-15%')
     code_15_inputs = get_dataset_inputs(CODE_15_PATH)
     inputs_list.append(code_15_inputs)
-    dataset_list.append(np.ones((code_15_inputs.shape[0],)) * CODE_15_SYMBOL)
+    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
 
-    return np.concatenate(inputs_list, axis=0), np.concatenate(dataset_list, axis=0)
+    return np.concatenate(inputs_list, axis=0), dataset_list
 
 
 def get_dataset_inputs(folder_path: str) -> np.ndarray:
@@ -82,13 +82,16 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     return reducer.fit_transform(x)
 
 
-def plot(embeddings: np.ndarray, dataset_labels: np.ndarray, title: str) -> None:
+def plot(embeddings: np.ndarray, dataset_labels: list, title: str) -> None:
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
     sc = ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
-                    c=dataset_labels, cmap='tab10', alpha=0.8)
+                    c=dataset_labels, alpha=0.8)
     ax.set_title(title)
-    plt.colorbar(sc)
+    plt.grid(True)
+    legend_elements = sc.legend_elements()[0]
+    label_names = np.unique(dataset_labels)
+    plt.legend(legend_elements, label_names, title="Dataset")
     # plt.show()
     plt.savefig(f'{title}.png', dpi=300)
 
@@ -97,10 +100,8 @@ def main() -> None:
     print('Getting inputs')
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
-    print(f'{x.shape=}, {x_flat.shape=}, {dataset_labels.shape=}')
     print('Reducing')
     embeddings = reduce(x_flat)
-    print(f'{embeddings.shape=}')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
 
 
