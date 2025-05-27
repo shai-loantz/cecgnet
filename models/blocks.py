@@ -26,6 +26,7 @@ class SequentialAttention(nn.Module):
     Uses the same concept of Spatial Attention in CBAM but in 1D instead of 2D.
     Sequential attention mechanism to reweight sequential parts according to max and average across channels (dim=1).
     """
+
     # added in_channels to conform to other attention classes, otherwise kernel_size=in_channels when init
     def __init__(self, in_channels: int = None, kernel_size: int = 7) -> None:
         super().__init__()

@@ -3,7 +3,6 @@ from ast import literal_eval
 
 import wandb
 from lightning import Trainer
-from wandb import Settings
 
 from data_tools.data_module import DataModule
 from models import Model, MODELS
@@ -39,7 +38,8 @@ def test(config: Config) -> None:
     logger.info('Done testing')
 
 
-def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig, augmentations: AugmentationsConfig):
+def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig,
+               augmentations: AugmentationsConfig):
     model_class = MODELS[model_name]
     logger.info(f'Loading model {model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=model_config, augmentations=augmentations)
@@ -84,7 +84,8 @@ def get_model_from_checkpoint(config: Config) -> Model:
     if checkpoint_path == '':
         raise Exception('No checkpoint was saved')
     logger.info(f'Loading model {config.model_name.value} from {checkpoint_path}')
-    return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model, augmentations=config.augmentations)
+    return model_class.load_from_checkpoint(str(checkpoint_path), config=config.model,
+                                            augmentations=config.augmentations)
 
 
 def parse_wandb_sweep() -> dict:
