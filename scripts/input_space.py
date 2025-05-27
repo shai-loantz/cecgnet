@@ -20,6 +20,9 @@ config = Config()
 
 
 def get_inputs() -> tuple[np.ndarray, np.ndarray]:
+    """
+    Returns shapes (N1+N2+N3, 12, 934) and (N1+N2+N3,)
+    """
     inputs_list = []
     dataset_list = []
 
@@ -35,22 +38,27 @@ def get_inputs() -> tuple[np.ndarray, np.ndarray]:
     inputs_list.append(code_15_inputs)
     dataset_list.append(np.ones_like(code_15_inputs) * CODE_15_SYMBOL)
 
-    return np.concatenate(inputs_list), np.concatenate(dataset_list)
+    return np.concatenate(inputs_list, axis=0), np.concatenate(dataset_list, axis=0)
 
 
 def get_dataset_inputs(folder_path: str) -> np.ndarray:
+    """
+    Returns shape (N, 12, 934)
+    """
     dataset = ECGDataset(folder_path, config.input_length, config.preprocess_config)
     signals = []
     for record_file_name in dataset.record_files:
         signal, fields = load_signals(record_file_name)
-        signals.append(preprocess(signal, fields['sig_name'], fields['fs'], config.input_length, config.pre))
+        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.input_length, config.pre)
+        signals.append(preprocessed.T)
 
-    return np.concatenate(signals)
+    return np.stack(signals, axis=0)
 
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     """
-    (N, 934) -> (N, 3)
+    (N, C) -> (N, 3)
+    C is 934*12 (input space) or 1088 (feature space)
     """
     if method == 'umap':
         reducer = umap.UMAP(n_components=3, random_state=42)
@@ -61,23 +69,24 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     return reducer.fit_transform(x)
 
 
-def plot(embeddings: np.ndarray, dataset_labels: np.ndarray) -> None:
+def plot(embeddings: np.ndarray, dataset_labels: np.ndarray, title: str) -> None:
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
     sc = ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
                     c=dataset_labels, cmap='tab10', alpha=0.8)
-    ax.set_title("3D UMAP - Colored by Dataset")
+    ax.set_title(title)
     plt.colorbar(sc)
-    plt.show()
+    # plt.show()
+    plt.savefig(f'{title}.png', dpi=300)
 
 
 def main() -> None:
     x, dataset_labels = get_inputs()
-    print(f'{x.shape=}, {dataset_labels.shape=}')
-
+    x_flat = x.reshape(x.shape[0], -1)
+    print(f'{x.shape=}, {x_flat.shape=}, {dataset_labels.shape=}')
     embeddings = reduce(x)
     print(f'{embeddings.shape=}')
-    plot(embeddings, dataset_labels)
+    plot(embeddings, dataset_labels, 'input_space_3d_datasets')
 
 
 if __name__ == '__main__':
