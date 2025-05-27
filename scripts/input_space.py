@@ -31,15 +31,15 @@ def get_inputs() -> tuple[np.ndarray, np.ndarray]:
 
     samitrop_inputs = get_dataset_inputs(SAMITROP_PATH)
     inputs_list.append(samitrop_inputs)
-    dataset_list.append(np.ones_like(samitrop_inputs) * SAMITROP_SYMBOL)
+    dataset_list.append(np.ones((samitrop_inputs.shape[0],)) * SAMITROP_SYMBOL)
 
     ptbxl_inputs = get_dataset_inputs(PTBXL_PATH)
     inputs_list.append(ptbxl_inputs)
-    dataset_list.append(np.ones_like(ptbxl_inputs) * PTBXL_SYMBOL)
+    dataset_list.append(np.ones((ptbxl_inputs.shape[0],)) * PTBXL_SYMBOL)
 
     code_15_inputs = get_dataset_inputs(CODE_15_PATH)
     inputs_list.append(code_15_inputs)
-    dataset_list.append(np.ones_like(code_15_inputs) * CODE_15_SYMBOL)
+    dataset_list.append(np.ones((code_15_inputs.shape[0],)) * CODE_15_SYMBOL)
 
     return np.concatenate(inputs_list, axis=0), np.concatenate(dataset_list, axis=0)
 
