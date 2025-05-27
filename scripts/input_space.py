@@ -45,11 +45,11 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
     """
     Returns shape (N, 12, 934)
     """
-    dataset = ECGDataset(folder_path, config.input_length, config.preprocess_config)
+    dataset = ECGDataset(folder_path, config.data.input_length, config.preprocess_config)
     signals = []
     for record_file_name in dataset.record_files:
         signal, fields = load_signals(record_file_name)
-        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.input_length, config.pre)
+        preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], config.data.input_length, config.pre)
         signals.append(preprocessed.T)
 
     return np.stack(signals, axis=0)
