@@ -5,7 +5,7 @@ from models import Model, SimpleResNet
 from scripts.input_space import get_inputs, reduce, plot
 from settings import Config
 
-CHECKPOINT_PATH = ''
+CHECKPOINT_PATH = '/home/stu2/cecgnet/checkpoints/pretraining_resnet-v10.ckpt'
 
 config = Config()
 

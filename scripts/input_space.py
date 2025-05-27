@@ -11,9 +11,9 @@ from data_tools.preprocess import preprocess
 from helper_code import load_signals
 from settings import Config, PreprocessConfig
 
-CODE_15_PATH = ''
-PTBXL_PATH = ''
-SAMITROP_PATH = ''
+CODE_15_PATH = '/MLdata/shai/physionet2025/code15'
+PTBXL_PATH = '/MLdata/shai/physionet2025/ptbxl'
+SAMITROP_PATH = '/MLdata/shai/physionet2025/samitrop'
 
 CODE_15_SYMBOL = 0
 PTBXL_SYMBOL = 1
