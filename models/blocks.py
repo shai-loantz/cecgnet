@@ -28,6 +28,7 @@ class SequentialAttention(nn.Module):
     """
 
     # added in_channels to conform to other attention classes, otherwise kernel_size=in_channels when init
+    # TODO: remove in_channels
     def __init__(self, in_channels: int = None, kernel_size: int = 7) -> None:
         super().__init__()
         self.conv = nn.Conv1d(2, 1, kernel_size=kernel_size, padding=kernel_size // 2, bias=False)

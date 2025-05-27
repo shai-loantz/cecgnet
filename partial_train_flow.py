@@ -4,7 +4,8 @@ from lightning import seed_everything
 
 from models import MODELS
 from settings import Config
-from utils.tools import train, test, start_wandb_sweep, restart_wandb_run
+from utils.tools import train, test
+from utils.wandb import restart_wandb_run, start_wandb_sweep
 
 seed_everything(42)
 RUN_POSTFIX = secrets.token_hex(2)

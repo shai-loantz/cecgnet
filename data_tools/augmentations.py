@@ -46,4 +46,4 @@ def get_augmentations(config: AugmentationsConfig, input_channels=12):
     augmentations = [fn() for key, fn in augmentation_options if getattr(config, key)]
     if not [*augmentations]:
         return v2.Identity()
-    return v2.RandomApply(augmentations, p=config.random_apply)
+    return v2.RandomApply(augmentations, p=config.apply_prob)

@@ -6,7 +6,8 @@ from torch import set_float32_matmul_precision
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.tools import train, restart_wandb_run, load_model, test, get_model_from_checkpoint, start_wandb_sweep
+from utils.tools import train, load_model, test, get_model_from_checkpoint
+from utils.wandb import restart_wandb_run, start_wandb_sweep
 
 set_float32_matmul_precision('high')
 seed_everything(42)

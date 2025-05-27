@@ -70,7 +70,7 @@ class TrainerConfig(BaseConfig):
 
 
 class AugmentationsConfig(BaseConfig):
-    random_apply: float = 1
+    apply_prob: float = 1
     channel_erase: bool = False
 
 
@@ -166,7 +166,9 @@ class Config(BaseSettings):
 
     def get_checkpoint_name(self) -> str:
         name = self.checkpoint_name or self.model_name.value
-        return f'pre_{name}' if self.pretraining else name
+        name = f'pre_{name}' if self.pretraining else name
+        name = f'{name}_meta' if self.model.add_metadata_end else name
+        return name
 
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder

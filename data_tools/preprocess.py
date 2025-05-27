@@ -67,10 +67,11 @@ def _adjust_length(signal: np.ndarray, target_length: int, random_edge_cut: bool
     current_length = signal.shape[0]
     if current_length > target_length:
         start = (current_length - target_length) // 2
-        if random_edge_cut: # 50% to be centered, 25% to be from start or end
-            if random.choice([True, False]):
+        # 50% to be centered, 25% to be from start or end
+        if random_edge_cut:
+            if random.random() < 0.5:
                 return signal[start:start + target_length]
-            if random.choice([True, False]):
+            if random.random() < 0.5:
                 return signal[:target_length]
             return signal[-target_length:]
         return signal[start:start + target_length]
