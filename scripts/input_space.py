@@ -1,6 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
+import matplotlib.colors as mcolors
 import numpy as np
 import umap
 from matplotlib import pyplot as plt
@@ -39,10 +40,10 @@ def get_inputs() -> tuple[np.ndarray, list]:
     inputs_list.append(ptbxl_inputs)
     dataset_list.extend([PTBXL_SYMBOL] * samitrop_inputs.shape[0])
 
-#    print('Preprocessing CODE-15%')
-#    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
-#    inputs_list.append(code_15_inputs)
-#    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
+    #    print('Preprocessing CODE-15%')
+    #    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
+    #    inputs_list.append(code_15_inputs)
+    #    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
 
     return np.concatenate(inputs_list, axis=0), dataset_list
 
@@ -82,18 +83,28 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     return reducer.fit_transform(x)
 
 
-def plot(embeddings: np.ndarray, dataset_labels: list, title: str) -> None:
+def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
+    unique_labels = np.unique(labels)
+    label_to_index = {label: i for i, label in enumerate(unique_labels)}
+    int_labels = np.array([label_to_index[label] for label in labels])
+
+    colors = ['tab:blue', 'tab:green', 'tab:orange']  # Choose N colors for N classes
+    cmap = mcolors.ListedColormap(colors[:len(unique_labels)])
+
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
-    sc = ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
-                    c=dataset_labels, alpha=0.8)
+    ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
+               c=int_labels, cmap=cmap, alpha=0.8)
     ax.set_title(title)
     plt.grid(True)
-    legend_elements = sc.legend_elements()[0]
-    label_names = np.unique(dataset_labels)
-    plt.legend(legend_elements, label_names, title="Dataset")
-    # plt.show()
+    handles = [
+        plt.Line2D([0], [0], marker='o', color='w',
+                   label=label, markerfacecolor=colors[idx], markersize=8)
+        for label, idx in label_to_index.items()
+    ]
+    plt.legend(handles=handles, title="Dataset")
     plt.savefig(f'{title}.png', dpi=300)
+    # plt.show()
 
 
 def main() -> None:
