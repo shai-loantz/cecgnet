@@ -21,7 +21,7 @@ SAMITROP_PATH = '/MLdata/shai/physionet2025/samitrop'
 CODE_15_SYMBOL = 'code15'
 PTBXL_SYMBOL = 'ptbxl'
 SAMITROP_SYMBOL = 'samitrop'
-DATASET_SAMPLE_SIZE = 1000
+DATASET_SAMPLE_SIZE = 800
 
 config = Config()
 
@@ -43,10 +43,10 @@ def get_inputs() -> tuple[np.ndarray, list]:
     inputs_list.append(ptbxl_inputs)
     dataset_list.extend([PTBXL_SYMBOL] * ptbxl_inputs.shape[0])
 
-    #    print('Preprocessing CODE-15%')
-    #    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
-    #    inputs_list.append(code_15_inputs)
-    #    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
+    print('Preprocessing CODE-15%')
+    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
+    inputs_list.append(code_15_inputs)
+    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
 
     return np.concatenate(inputs_list, axis=0), dataset_list
 
