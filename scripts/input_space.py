@@ -119,6 +119,7 @@ def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
 
 
 def classify(embeddings: np.ndarray, labels: list) -> None:
+    print('Training a classifier')
     le = LabelEncoder()
     y = le.fit_transform(labels)  # Encode to integers: 0,1,2...
 
@@ -133,7 +134,7 @@ def main() -> None:
     x_flat = x.reshape(x.shape[0], -1)
     embeddings = reduce(x_flat, 'tsne')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
-    classify()
+    classify(embeddings, dataset_labels)
 
 
 if __name__ == '__main__':
