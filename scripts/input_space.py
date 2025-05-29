@@ -115,7 +115,7 @@ def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
         for label, idx in label_to_index.items()
     ]
     plt.legend(handles=handles, title="Dataset")
-    plt.savefig(f'{title}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{title}.png', dpi=300, bbox_inches='tight', pad_inches=0.1)
     # plt.show()
 
 
