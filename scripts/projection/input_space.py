@@ -116,7 +116,10 @@ def main() -> None:
     x_flat = x.reshape(x.shape[0], -1)
     embeddings = reduce(x_flat, 'tsne')
     plot(embeddings, dataset_labels, chagas_labels, 'input_space_3d_datasets')
+    print('dataset classification:')
     classify(embeddings, dataset_labels)
+    print('Chagas classification:')
+    classify(embeddings, chagas_labels)
 
 
 if __name__ == '__main__':
