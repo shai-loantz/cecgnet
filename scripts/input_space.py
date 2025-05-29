@@ -21,6 +21,7 @@ SAMITROP_PATH = '/MLdata/shai/physionet2025/samitrop'
 CODE_15_SYMBOL = 'code15'
 PTBXL_SYMBOL = 'ptbxl'
 SAMITROP_SYMBOL = 'samitrop'
+DATASET_SAMPLE_SIZE = 1000
 
 config = Config()
 
@@ -57,10 +58,11 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
     dataset = ECGDataset(folder_path, config.data.input_length, config.pre_process)
     input_length = config.data.input_length
     pre_process = config.pre_process
+    sampled_record_files = np.random.choice(dataset.record_files, size=DATASET_SAMPLE_SIZE, replace=False)
 
     with ProcessPoolExecutor() as executor:
         process_func = partial(process_record, input_length=input_length, pre_process=pre_process)
-        signals = list(executor.map(process_func, dataset.record_files))
+        signals = list(executor.map(process_func, sampled_record_files))
 
     return np.stack(signals, axis=0)
 
@@ -72,9 +74,7 @@ def process_record(record_file_name: str, input_length: int, pre_process: Prepro
 
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
-    print('Reducing')
-
-    print('Normalizeing')
+    print('Normalizing')
     scaler = StandardScaler()
     x_std = scaler.fit_transform(x)
 
@@ -84,9 +84,9 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
 
     print('Performing final reduction')
     if method == 'umap':
-        reducer = umap.UMAP(n_components=3, random_state=42)
+        reducer = umap.UMAP(n_components=3, random_state=0)
     elif method == 'tsne':
-        reducer = TSNE(n_components=3, perplexity=30, random_state=42)
+        reducer = TSNE(n_components=3, perplexity=30, random_state=0)
     else:
         raise Exception(f'{method=} is not supported')
     return reducer.fit_transform(x_pca)
@@ -103,7 +103,7 @@ def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
-               c=int_labels, cmap=cmap, alpha=0.8)
+               c=int_labels, cmap=cmap, alpha=0.5, s=5)
     ax.set_title(title)
     plt.grid(True)
     handles = [
