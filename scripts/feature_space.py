@@ -34,7 +34,7 @@ def main() -> None:
     print(f'{x.shape=}, {x_flat.shape=}')
     input_embeddings = reduce(x_flat)
     print(f'{input_embeddings.shape=}')
-    plot(input_embeddings, dataset_labels, 'input_space_3d')
+    plot(input_embeddings, dataset_labels, 'input_space_3d_datasets')
 
     model = get_model_from_checkpoint()
     feature_space = cnn_forward(model, tensor(x, dtype=torch.float))

@@ -87,7 +87,7 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
 
     print('Performing final reduction')
     if method == 'umap':
-        reducer = umap.UMAP(n_components=3, random_state=0)
+        reducer = umap.UMAP(n_components=3, n_jobs=64)
     elif method == 'tsne':
         reducer = TSNE(n_components=3, perplexity=30, random_state=0)
     else:
