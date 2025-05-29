@@ -120,7 +120,7 @@ def main() -> None:
     print('Getting inputs')
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
-    embeddings = reduce(x_flat)
+    embeddings = reduce(x_flat, 'tsne')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
 
 
