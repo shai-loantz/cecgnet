@@ -74,15 +74,15 @@ def process_record(record_file_name: str, input_length: int, pre_process: Prepro
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     print('Reducing')
 
-    # Normalize
+    print('Normalizeing')
     scaler = StandardScaler()
     x_std = scaler.fit_transform(x)
 
-    # Pre PCA
+    print('Reducing using PCA (intermediate)')
     pca = PCA(n_components=50, random_state=0)
     x_pca = pca.fit_transform(x_std)
 
-    # Final reduction
+    print('Performing final reduction')
     if method == 'umap':
         reducer = umap.UMAP(n_components=3, random_state=42)
     elif method == 'tsne':
