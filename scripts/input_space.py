@@ -26,6 +26,7 @@ SAMITROP_SYMBOL = 'samitrop'
 DATASET_SAMPLE_SIZE = 800
 
 config = Config()
+np.random.seed(1)
 
 
 def get_inputs() -> tuple[np.ndarray, list]:
@@ -114,14 +115,14 @@ def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
         for label, idx in label_to_index.items()
     ]
     plt.legend(handles=handles, title="Dataset")
-    plt.savefig(f'{title}.png', dpi=300)
+    plt.savefig(f'{title}.png', dpi=300, bbox_inches='tight')
     # plt.show()
 
 
 def classify(embeddings: np.ndarray, labels: list) -> None:
     print('Training a classifier')
     le = LabelEncoder()
-    y = le.fit_transform(labels)  # Encode to integers: 0,1,2...
+    y = le.fit_transform(labels)
 
     clf = RandomForestClassifier()
     scores = cross_val_score(clf, embeddings, y, cv=5)
