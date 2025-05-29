@@ -3,7 +3,7 @@ import torch
 from torch import Tensor, tensor
 
 from models import Model, SimpleResNet
-from scripts.input_space import get_inputs, reduce, plot
+from scripts.projection.input_space import get_inputs, reduce, plot
 from settings import Config
 
 CHECKPOINT_PATH = '/home/stu2/cecgnet/checkpoints/pretraining_resnet-v8.ckpt'

@@ -1,19 +1,18 @@
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
-import matplotlib.colors as mcolors
 import numpy as np
 import umap
-from matplotlib import pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.manifold import TSNE
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.decomposition import PCA
 
 from data_tools.data_set import ECGDataset
 from data_tools.preprocess import preprocess
-from helper_code import load_signals
+from helper_code import load_signals, load_label
+from scripts.projection.plot import plot
 from settings import Config, PreprocessConfig
 
 CODE_15_PATH = '/MLdata/shai/physionet2025/code15'
@@ -26,37 +25,41 @@ SAMITROP_SYMBOL = 'samitrop'
 DATASET_SAMPLE_SIZE = 800
 
 config = Config()
-np.random.seed(1)
+np.random.seed(3)
 
 
-def get_inputs() -> tuple[np.ndarray, list]:
+def get_inputs() -> tuple[np.ndarray, list, list]:
     """
     Returns shapes (N1+N2+N3, 12, 934) and (N1+N2+N3,)
     """
     inputs_list = []
     dataset_list = []
+    chagas_labels = []
 
     print('Preprocessing SamiTrop')
-    samitrop_inputs = get_dataset_inputs(SAMITROP_PATH)
-    inputs_list.append(samitrop_inputs)
-    dataset_list.extend([SAMITROP_SYMBOL] * samitrop_inputs.shape[0])
+    inputs, labels = get_dataset_inputs(SAMITROP_PATH)
+    inputs_list.append(inputs)
+    chagas_labels.extend(labels)
+    dataset_list.extend([SAMITROP_SYMBOL] * inputs.shape[0])
 
     print('Preprocessing PTB-XL')
-    ptbxl_inputs = get_dataset_inputs(PTBXL_PATH)
-    inputs_list.append(ptbxl_inputs)
-    dataset_list.extend([PTBXL_SYMBOL] * ptbxl_inputs.shape[0])
+    inputs, labels = get_dataset_inputs(PTBXL_PATH)
+    inputs_list.append(inputs)
+    chagas_labels.extend(labels)
+    dataset_list.extend([PTBXL_SYMBOL] * inputs.shape[0])
 
     print('Preprocessing CODE-15%')
-    code_15_inputs = get_dataset_inputs(CODE_15_PATH)
-    inputs_list.append(code_15_inputs)
-    dataset_list.extend([CODE_15_SYMBOL] * code_15_inputs.shape[0])
+    inputs, labels = get_dataset_inputs(CODE_15_PATH)
+    inputs_list.append(inputs)
+    chagas_labels.extend(labels)
+    dataset_list.extend([CODE_15_SYMBOL] * inputs.shape[0])
 
-    return np.concatenate(inputs_list, axis=0), dataset_list
+    return np.concatenate(inputs_list, axis=0), dataset_list, chagas_labels
 
 
-def get_dataset_inputs(folder_path: str) -> np.ndarray:
+def get_dataset_inputs(folder_path: str) -> tuple[np.ndarray, list[int]]:
     """
-    Returns shape (N, 12, 934)
+    Returns shape (N, 12, 934) and a list of size N
     """
     dataset = ECGDataset(folder_path, config.data.input_length, config.pre_process)
     input_length = config.data.input_length
@@ -65,15 +68,16 @@ def get_dataset_inputs(folder_path: str) -> np.ndarray:
 
     with ProcessPoolExecutor() as executor:
         process_func = partial(process_record, input_length=input_length, pre_process=pre_process)
-        signals = list(executor.map(process_func, sampled_record_files))
+        results = list(executor.map(process_func, sampled_record_files))
+        signals, labels = zip(*results)
 
-    return np.stack(signals, axis=0)
+    return np.stack(list(signals), axis=0), list(labels)
 
 
-def process_record(record_file_name: str, input_length: int, pre_process: PreprocessConfig) -> np.ndarray:
+def process_record(record_file_name: str, input_length: int, pre_process: PreprocessConfig) -> tuple[np.ndarray, int]:
     signal, fields = load_signals(record_file_name)
     preprocessed = preprocess(signal, fields['sig_name'], fields['fs'], input_length, pre_process)
-    return preprocessed.T
+    return preprocessed.T, load_label(record_file_name)
 
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
@@ -95,30 +99,6 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     return reducer.fit_transform(x_pca)
 
 
-def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
-    unique_labels = np.unique(labels)
-    label_to_index = {label: i for i, label in enumerate(unique_labels)}
-    int_labels = np.array([label_to_index[label] for label in labels])
-
-    colors = ['tab:blue', 'tab:green', 'tab:orange']  # Choose N colors for N classes
-    cmap = mcolors.ListedColormap(colors[:len(unique_labels)])
-
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(embeddings[:, 0], embeddings[:, 1], embeddings[:, 2],
-               c=int_labels, cmap=cmap, alpha=0.5, s=5)
-    ax.set_title(title)
-    plt.grid(True)
-    handles = [
-        plt.Line2D([0], [0], marker='o', color='w',
-                   label=label, markerfacecolor=colors[idx], markersize=8)
-        for label, idx in label_to_index.items()
-    ]
-    plt.legend(handles=handles, title="Dataset")
-    plt.savefig(f'{title}.png', dpi=300, bbox_inches='tight', pad_inches=0.1)
-    # plt.show()
-
-
 def classify(embeddings: np.ndarray, labels: list) -> None:
     print('Training a classifier')
     le = LabelEncoder()
@@ -127,14 +107,15 @@ def classify(embeddings: np.ndarray, labels: list) -> None:
     clf = RandomForestClassifier()
     scores = cross_val_score(clf, embeddings, y, cv=5)
 
-    print("Dataset classification accuracy:", scores.mean())
+    print("Classification accuracy:", scores.mean())
+
 
 def main() -> None:
     print('Getting inputs')
-    x, dataset_labels = get_inputs()
+    x, dataset_labels, chagas_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
     embeddings = reduce(x_flat, 'tsne')
-    plot(embeddings, dataset_labels, 'input_space_3d_datasets')
+    plot(embeddings, dataset_labels, chagas_labels, 'input_space_3d_datasets')
     classify(embeddings, dataset_labels)
 
 
