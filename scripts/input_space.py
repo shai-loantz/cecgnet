@@ -46,7 +46,7 @@ def get_inputs() -> tuple[np.ndarray, list]:
     print('Preprocessing CODE-15%')
     code_15_inputs = get_dataset_inputs(CODE_15_PATH)
     inputs_list.append(code_15_inputs)
-    dataset_list.extend([CODE_15_SYMBOL] * samitrop_inputs.shape[0])
+    dataset_list.extend([CODE_15_SYMBOL] * code_15_inputs.shape[0])
 
     return np.concatenate(inputs_list, axis=0), dataset_list
 
