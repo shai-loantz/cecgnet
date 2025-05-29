@@ -25,7 +25,7 @@ SAMITROP_SYMBOL = 'samitrop'
 DATASET_SAMPLE_SIZE = 800
 
 config = Config()
-np.random.seed(3)
+np.random.seed(4)
 
 
 def get_inputs() -> tuple[np.ndarray, list, list]:
