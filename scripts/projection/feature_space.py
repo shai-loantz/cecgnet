@@ -4,6 +4,7 @@ from torch import Tensor, tensor
 
 from models import Model, SimpleResNet
 from scripts.projection.input_space import get_inputs, reduce, plot
+from scripts.projection.tools import classify
 from settings import Config
 
 CHECKPOINT_PATH = '/home/stu2/cecgnet/checkpoints/pretraining_resnet-v8.ckpt'
@@ -27,20 +28,25 @@ def cnn_forward(model, x: Tensor) -> np.ndarray:
 
 
 def main() -> None:
-    x, dataset_labels = get_inputs()
-    print(f'{x.shape=}')
-
+    print('Getting inputs')
+    x, dataset_labels, chagas_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
-    print(f'{x.shape=}, {x_flat.shape=}')
     input_embeddings = reduce(x_flat)
-    print(f'{input_embeddings.shape=}')
-    plot(input_embeddings, dataset_labels, 'input_space_2d_datasets')
+    plot(input_embeddings, dataset_labels, chagas_labels, 'input_space')
+    print('dataset classification:')
+    classify(input_embeddings, dataset_labels)
+    print('Chagas classification:')
+    classify(input_embeddings, chagas_labels)
 
     model = get_model_from_checkpoint()
     feature_space = cnn_forward(model, tensor(x, dtype=torch.float))
     print(f'{feature_space.shape=}')
     feature_embeddings = reduce(feature_space)
-    plot(feature_embeddings, dataset_labels, 'feature_space_2d_datasets')
+    plot(feature_embeddings, dataset_labels, chagas_labels, 'feature_space')
+    print('dataset classification:')
+    classify(feature_embeddings, dataset_labels)
+    print('Chagas classification:')
+    classify(feature_embeddings, chagas_labels)
 
 
 if __name__ == "__main__":
