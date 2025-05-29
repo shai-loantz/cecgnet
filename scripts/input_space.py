@@ -6,6 +6,8 @@ import numpy as np
 import umap
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 from data_tools.data_set import ECGDataset
 from data_tools.preprocess import preprocess
@@ -71,13 +73,23 @@ def process_record(record_file_name: str, input_length: int, pre_process: Prepro
 
 def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
     print('Reducing')
+
+    # Normalize
+    scaler = StandardScaler()
+    x_std = scaler.fit_transform(x)
+
+    # Pre PCA
+    pca = PCA(n_components=50, random_state=0)
+    x_pca = pca.fit_transform(x_std)
+
+    # Final reduction
     if method == 'umap':
         reducer = umap.UMAP(n_components=3, random_state=42)
     elif method == 'tsne':
         reducer = TSNE(n_components=3, perplexity=30, random_state=42)
     else:
         raise Exception(f'{method=} is not supported')
-    return reducer.fit_transform(x)
+    return reducer.fit_transform(x_pca)
 
 
 def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
