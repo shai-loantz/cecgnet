@@ -5,8 +5,10 @@ import matplotlib.colors as mcolors
 import numpy as np
 import umap
 from matplotlib import pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 
 from data_tools.data_set import ECGDataset
@@ -116,12 +118,22 @@ def plot(embeddings: np.ndarray, labels: list, title: str) -> None:
     # plt.show()
 
 
+def classify(embeddings: np.ndarray, labels: list) -> None:
+    le = LabelEncoder()
+    y = le.fit_transform(labels)  # Encode to integers: 0,1,2...
+
+    clf = RandomForestClassifier()
+    scores = cross_val_score(clf, embeddings, y, cv=5)
+
+    print("Dataset classification accuracy:", scores.mean())
+
 def main() -> None:
     print('Getting inputs')
     x, dataset_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
     embeddings = reduce(x_flat, 'tsne')
     plot(embeddings, dataset_labels, 'input_space_3d_datasets')
+    classify()
 
 
 if __name__ == '__main__':
