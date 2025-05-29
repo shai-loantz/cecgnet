@@ -47,8 +47,13 @@ def plot(embeddings: np.ndarray, dataset_labels: list, classification_labels: li
     ax2.grid(True)
     create_legend(ax2, class_label_map, class_colors, "Classification")
 
-    # Save
+    # Create figure-level title and layout
     fig.suptitle(title, fontsize=14)
-    fig.tight_layout(rect=(0, 0, 1, 0.95))  # prevent cropping
-    plt.savefig(f"{title}.png", dpi=300, bbox_inches='tight', pad_inches=0.3)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+
+    # Collect all legend handles
+    extra_artists = fig.get_children()  # includes suptitle, legends, etc.
+
+    # Save with bbox_extra_artists
+    plt.savefig(f"{title}.png", dpi=300, bbox_inches='tight', bbox_extra_artists=extra_artists)
     plt.close()

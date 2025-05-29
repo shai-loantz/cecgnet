@@ -91,9 +91,9 @@ def reduce(x: np.ndarray, method: str = 'umap') -> np.ndarray:
 
     print('Performing final reduction')
     if method == 'umap':
-        reducer = umap.UMAP(n_components=3, n_jobs=64)
+        reducer = umap.UMAP(n_components=2, n_jobs=64)
     elif method == 'tsne':
-        reducer = TSNE(n_components=3, perplexity=30, random_state=0)
+        reducer = TSNE(n_components=2, perplexity=30, random_state=0)
     else:
         raise Exception(f'{method=} is not supported')
     return reducer.fit_transform(x_pca)
@@ -115,7 +115,7 @@ def main() -> None:
     x, dataset_labels, chagas_labels = get_inputs()
     x_flat = x.reshape(x.shape[0], -1)
     embeddings = reduce(x_flat, 'tsne')
-    plot(embeddings, dataset_labels, chagas_labels, 'input_space_3d_datasets')
+    plot(embeddings, dataset_labels, chagas_labels, 'input_space_2d_datasets')
     print('dataset classification:')
     classify(embeddings, dataset_labels)
     print('Chagas classification:')
