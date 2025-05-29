@@ -49,6 +49,6 @@ def plot(embeddings: np.ndarray, dataset_labels: list, classification_labels: li
 
     # Save
     fig.suptitle(title, fontsize=14)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])  # prevent cropping
-    plt.savefig(f"{title}.png", dpi=300, bbox_inches='tight', pad_inches=0.2)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))  # prevent cropping
+    plt.savefig(f"{title}.png", dpi=300, bbox_inches='tight', pad_inches=0.3)
     plt.close()
