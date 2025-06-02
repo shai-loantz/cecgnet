@@ -6,7 +6,8 @@ from torch import set_float32_matmul_precision
 from models import MODELS
 from settings import Config
 from utils.logger import logger
-from utils.tools import train, restart_wandb_run, load_model, test, get_model_from_checkpoint, start_wandb_sweep
+from utils.tools import train, load_model, test, get_model_from_checkpoint
+from utils.wandb import restart_wandb_run, start_wandb_sweep
 
 set_float32_matmul_precision('high')
 seed_everything(42)
@@ -21,7 +22,7 @@ def main():
         config = start_wandb_sweep(config, RUN_POSTFIX)
     if config.pretraining:
         logger.info('Pre-training')
-        model = MODELS[config.model_name](config.pre_model)
+        model = MODELS[config.model_name](config.pre_model, config.augmentations)
         train(model, config, use_pretraining=True)
         model = get_model_from_checkpoint(config)
         test(config)
@@ -32,10 +33,10 @@ def main():
         logger.info('Pre-training completed')
     else:  # load from pretrained model
         try:
-            model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model)
+            model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model, config.augmentations)
         except:
             logger.debug('load pre-training failed')
-            model = MODELS[config.model_name](config.model)
+            model = MODELS[config.model_name](config.model, config.augmentations)
     logger.info('Fine-tuning')
     train(model, config)
     test(config)

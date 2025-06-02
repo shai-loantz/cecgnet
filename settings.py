@@ -61,11 +61,17 @@ class PreprocessConfig(BaseModel):
     resample_freq: int
     low_cut_freq: float
     high_cut_freq: float
+    random_edge_cut: bool = False
 
 
 class TrainerConfig(BaseConfig):
     max_epochs: int = 30
     accumulate_grad_batches: int = 16
+
+
+class AugmentationsConfig(BaseConfig):
+    apply_prob: float = 1
+    channel_erase: bool = False
 
 
 class LightningConfig(BaseModel):
@@ -84,7 +90,7 @@ class ModelConfig(BaseConfig):
     use_weighted_loss: bool = True
     positive_prevalence: float
     warmup_steps: int = 1000
-
+    add_metadata_end: bool = True
     attention: Attention = Attention.SelfAttention
 
 
@@ -102,6 +108,7 @@ class Config(BaseSettings):
     pre_process: PreprocessConfig
     model: ModelConfig
     model_folder: str = 'checkpoints'
+    augmentations: AugmentationsConfig
 
     # pre training settings
     pretraining: bool
@@ -159,7 +166,9 @@ class Config(BaseSettings):
 
     def get_checkpoint_name(self) -> str:
         name = self.checkpoint_name or self.model_name.value
-        return f'pretraining_{name}' if self.pretraining else name
+        name = f'pre_{name}' if self.pretraining else name
+        name = f'{name}_meta' if self.model.add_metadata_end else name
+        return name
 
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder
@@ -186,6 +195,7 @@ class Config(BaseSettings):
             'pretraining': self.pretraining,
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
+            'augmentations': self.augmentations.model_dump(),
         }
         if self.pretraining:
             params.update({'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
