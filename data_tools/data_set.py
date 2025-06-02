@@ -32,11 +32,12 @@ class ECGDataset(Dataset):
         header = load_header(record_file_name)
         age = get_age(header)
         age = float(age) if age is not None else -1.0
-        sex = get_sex(header)
+        sex_str = get_sex(header)
         sex_map = {"Female": 1.0, "Male": -1.0}
-        sex = sex_map.get(sex, 0.0 if sex is None else None)
+        # returns the sex float in accordance with sex_map, if got None returns 0, if got unidentified str returns None
+        sex = sex_map.get(sex_str, 0.0 if sex_str is None else None)
         if sex is None:
-            raise NotImplementedError(f"Unrecognized sex")
+            raise NotImplementedError(f"Unrecognized sex: {sex_str}")
         return torch.tensor([age, sex], dtype=torch.float32)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor, Tensor]:
