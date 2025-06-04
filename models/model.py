@@ -69,7 +69,7 @@ class Model(LightningModule):
         self._metric_step(batch, 'val')
 
     def test_step(self, batches: dict[str, list[Tensor]], batch_idx: int, dataloader_idx: int = 0) -> None:
-        for name, batch in batches:
+        for name, batch in batches.items():
             if batch is not None:
                 self._metric_step(batch, f'test_{name}')
 
@@ -78,7 +78,7 @@ class Model(LightningModule):
 
     def on_test_epoch_end(self) -> None:
         for name in self.targets.keys():
-            self._on_metric_epoch_end(f'test_{name}')
+            self._on_metric_epoch_end(name)
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets, metadata = batch
