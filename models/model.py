@@ -21,8 +21,8 @@ class Model(LightningModule):
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
-        self.targets: list[Tensor] = []
-        self.outputs: list[Tensor] = []
+        self.targets: dict[str, list[Tensor]] = {}
+        self.outputs: dict[str, list[Tensor]] = {}
         self.augmentations = get_augmentations(augmentations, config.input_channels)
 
     def setup(self, stage=None):
@@ -37,17 +37,21 @@ class Model(LightningModule):
         return loss
 
     def _on_metric_epoch_start(self) -> None:
-        self.targets = []
-        self.outputs = []
+        self.targets = {}
+        self.outputs = {}
 
     def _metric_step(self, batch: list[Tensor], step_name: str) -> None:
+        if step_name not in self.targets or step_name not in self.outputs:
+            self.targets[step_name] = []
+            self.outputs[step_name] = []
+
         _, outputs, targets = self._run_batch(batch, step_name)
-        self.targets.append(targets.detach().cpu())
-        self.outputs.append(outputs.detach().cpu())
+        self.targets[step_name].append(targets.detach().cpu())
+        self.outputs[step_name].append(outputs.detach().cpu())
 
     def _on_metric_epoch_end(self, step_name: str) -> None:
-        targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32)).flatten()
-        outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32)).flatten()
+        targets = np.array(torch.cat(self.targets[step_name], dim=0).to(torch.float32)).flatten()
+        outputs = np.array(torch.cat(self.outputs[step_name], dim=0).to(torch.float32)).flatten()
         metrics = calculate_metrics(targets, outputs, self.config.threshold)
         self.log_dict({f'{step_name}_{key}': value for key, value in metrics.items()})
 
@@ -64,14 +68,17 @@ class Model(LightningModule):
         #     write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
         self._metric_step(batch, 'val')
 
-    def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self._metric_step(batch, 'test')
+    def test_step(self, batches: dict[str, list[Tensor]], batch_idx: int, dataloader_idx: int = 0) -> None:
+        for name, batch in batches:
+            if batch is not None:
+                self._metric_step(batch, f'test_{name}')
 
     def on_validation_epoch_end(self) -> None:
         self._on_metric_epoch_end('val')
 
     def on_test_epoch_end(self) -> None:
-        self._on_metric_epoch_end('test')
+        for name in self.targets.keys():
+            self._on_metric_epoch_end(f'test_{name}')
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
         inputs, targets, metadata = batch
