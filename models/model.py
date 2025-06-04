@@ -71,7 +71,7 @@ class Model(LightningModule):
     def test_step(self, batches: dict[str, list[Tensor]], batch_idx: int, dataloader_idx: int = 0) -> None:
         for name, batch in batches.items():
             if batch is not None:
-                self._metric_step(batch, f'test_{name}')
+                self._metric_step(batch, name)
 
     def on_validation_epoch_end(self) -> None:
         self._on_metric_epoch_end('val')
