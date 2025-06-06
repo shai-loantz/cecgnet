@@ -7,19 +7,23 @@ from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 
-from settings import ModelConfig
+from data_tools.augmentations import get_augmentations
+from settings import ModelConfig, AugmentationsConfig
 from utils.logger import setup_logger, logger
 from utils.metrics import calculate_metrics
 
+METADATA_DIM = 2
+
 
 class Model(LightningModule):
-    def __init__(self, config: ModelConfig) -> None:
+    def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig) -> None:
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
         self.targets: list[Tensor] = []
         self.outputs: list[Tensor] = []
+        self.augmentations = get_augmentations(augmentations, config.input_channels)
 
     def setup(self, stage=None):
         if self.our_logger is None:
@@ -27,8 +31,9 @@ class Model(LightningModule):
             self.our_logger.info(f"Logger initialized in setup() on rank {self.global_rank}")
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        inputs, targets = batch
-        loss, _, _ = self._run_batch([inputs, targets], 'train')
+        inputs, targets, metadata = batch
+        inputs = self.augmentations(inputs)
+        loss, _, _ = self._run_batch([inputs, targets, metadata], 'train')
         return loss
 
     def _on_metric_epoch_start(self) -> None:
@@ -69,8 +74,8 @@ class Model(LightningModule):
         self._on_metric_epoch_end('test')
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
-        inputs, targets = batch
-        outputs = self(inputs)
+        inputs, targets, metadata = batch
+        outputs = self(inputs, metadata)
         loss = self.criterion(outputs, targets)
         self.log(f'{name}_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss, outputs, targets
@@ -91,6 +96,20 @@ class Model(LightningModule):
                 "interval": "step",
             }
         }
+
+    def add_metadata(self, x: Tensor, metadata: tensor) -> Tensor:
+        if x.shape[0] != metadata.shape[0]:
+            raise ValueError("Batch size mismatch between x and metadata")
+        if x.dim() > 2:
+            raise ValueError("need 1D embeddings for metadata concatination")
+
+        if metadata is None:
+            metadata = torch.zeros(x.size(0), METADATA_DIM, device=x.device)
+        elif torch.isnan(metadata).any():
+            metadata = torch.nan_to_num(metadata, nan=0.0)
+
+        # Concatenate along the feature dimension
+        return torch.cat([x, metadata], dim=1)
 
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """
@@ -115,7 +134,7 @@ class Model(LightningModule):
         from settings import Config
         config = Config()
         x = randn(batch_size, config.model.input_channels, config.data.input_length)
-        model = cls(config.model)
+        model = cls(config.model, config.augmentations)
         logger.info(str(model))
         logger.info(summarize(model))
         logits = model(x).detach().squeeze()

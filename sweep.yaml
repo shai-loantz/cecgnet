@@ -1,0 +1,23 @@
+program: "./full_train_flow.py"
+
+method: bayes # random / bayes
+
+metric:
+  name: "challenge_score"
+  goal: "maximize"
+
+parameters:
+  model__learning_rate: { distribution: log_uniform_values, min: 1e-8, max: 0.1 }
+
+
+early_terminate:
+  type: "hyperband"
+  min_iter: 10
+
+# NOTICE - the sweep will work correctly only when manual_run in config is False
+
+# in order to run sweep, first create the sweep, this will include which file is activated and what parameters change:
+# wandb sweep sweep.yaml
+
+# after there is a sweep instance, in order to set up an agent that will continuously summon runs:
+# wandb agent tal4tal4-technion-israel-institute-of-technology/cecgnet/{SWEEP_NAME}

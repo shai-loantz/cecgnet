@@ -283,9 +283,12 @@ def compute_challenge_score(labels, outputs, fraction_capacity = 0.05, num_permu
     tn = np.mean(tn)
 
     # Compute the true positive rate.
-    if tp + fn > 0:
-        tpr = tp / (tp + fn)
-    else:
+    try:  # TODO: remove try
+        if tp + fn > 0:
+            tpr = tp / (tp + fn)
+        else:
+            tpr = float('nan')
+    except (IndexError, TypeError):
         tpr = float('nan')
 
     return tpr
