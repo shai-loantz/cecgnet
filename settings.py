@@ -55,7 +55,7 @@ class DataConfig(BaseConfig):
 
     def get_data_loader_config(self) -> dict:
         return self.model_dump(exclude={"input_length", "validation_size", "positive_sampling_factor",
-                                        "data_folder", "test_data_folder"})
+                                        "data_folder", "test_folder_prefix", "test_set_names"})
 
 
 class PreprocessConfig(BaseModel):
