@@ -13,6 +13,7 @@ from utils.logger import setup_logger
 class ECGDataset(Dataset):
     def __init__(self, data_folder: str, input_length: int, preprocess_config: PreprocessConfig) -> None:
         self.input_length = input_length
+        # :-4 is for removing the filename extension (.dat)
         self.record_files = [filename[:-4] for filename in glob(f'{data_folder}/*.dat')]
         self.preprocess_config = preprocess_config
         if not self.record_files:
