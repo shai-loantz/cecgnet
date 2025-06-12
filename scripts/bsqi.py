@@ -13,10 +13,10 @@ from data_tools.preprocess import preprocess
 from helper_code import load_signals
 from settings import Config
 
-GOOD_THRESHOLD = 0.75
+GOOD_THRESHOLD = 0.65
 BAD_THRESHOLD = 0.2
-MIN_GOOD_LEADS = 8
-MAX_BAD_LEADS = 1
+MIN_GOOD_LEADS = 6
+MAX_BAD_LEADS = 2
 NUM_WORKERS = 32
 
 
