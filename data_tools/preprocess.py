@@ -1,6 +1,7 @@
 import numpy as np
 import pywt
 from scipy.signal import resample, butter, sosfiltfilt
+import random
 
 from settings import PreprocessConfig
 from utils.logger import logger
@@ -17,7 +18,7 @@ def preprocess(signal: np.ndarray, signal_names: list[str], fs: int, input_lengt
     sos_filter = get_filter(fs, config.low_cut_freq, config.high_cut_freq)
     signal = filter_signal(signal, sos_filter)
     signal = resample_signal(signal, fs, config.resample_freq)
-    signal = ensure_signal_size(signal, input_length)
+    signal = ensure_signal_size(signal, input_length, config.random_edge_cut)
 
     return signal
 
@@ -50,22 +51,29 @@ def create_filters(low_cut_freq: float, high_cut_freq: float, filter_order: int 
     return filters
 
 
-def ensure_signal_size(signal: np.ndarray, input_length: int) -> np.ndarray:
+def ensure_signal_size(signal: np.ndarray, input_length: int, random_edge_cut: bool) -> np.ndarray:
     """
     Ensure the signal is of shape (input_length, 12) using center padding or truncation.
     """
     if signal.ndim != 2:
         raise ValueError(f"Expected signal with 2 dimensions (time, channels), got shape {signal.shape}")
 
-    signal = _adjust_length(signal, input_length)
+    signal = _adjust_length(signal, input_length, random_edge_cut)
     signal = _adjust_channels(signal, target_channels=12)
     return signal
 
 
-def _adjust_length(signal: np.ndarray, target_length: int) -> np.ndarray:
+def _adjust_length(signal: np.ndarray, target_length: int, random_edge_cut: bool) -> np.ndarray:
     current_length = signal.shape[0]
     if current_length > target_length:
         start = (current_length - target_length) // 2
+        # 50% to be centered, 25% to be from start or end
+        if random_edge_cut:
+            if random.random() < 0.5:
+                return signal[start:start + target_length]
+            if random.random() < 0.5:
+                return signal[:target_length]
+            return signal[-target_length:]
         return signal[start:start + target_length]
     elif current_length < target_length:
         pad_total = target_length - current_length
