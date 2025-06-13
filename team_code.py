@@ -25,7 +25,7 @@ config = Config()
 
 def train_model(data_folder: str, model_folder: str, verbose: bool):
     config.update_settings(data_folder, model_folder)
-    model = MODELS[config.model_name](config.model)
+    model = MODELS[config.model_name](config.model, config.augmentations)
     train(model, config, use_wandb=False)
     logger.info('Done training')
 

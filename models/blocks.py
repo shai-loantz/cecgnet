@@ -16,9 +16,9 @@ class SEBlock(nn.Module):
         self.activation = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x_mean = x.mean(dim=1)  # mean of each channel over time
+        x_mean = x.mean(dim=2)  # mean of each channel over time
         attn = self.fc2(self.activation(self.fc1(x_mean)))
-        return x * torch.sigmoid(attn).unsqueeze(1)
+        return x * torch.sigmoid(attn).unsqueeze(2)
 
 
 class SequentialAttention(nn.Module):
@@ -27,7 +27,9 @@ class SequentialAttention(nn.Module):
     Sequential attention mechanism to reweight sequential parts according to max and average across channels (dim=1).
     """
 
-    def __init__(self, kernel_size: int = 7) -> None:
+    # added in_channels to conform to other attention classes, otherwise kernel_size=in_channels when init
+    # TODO: remove in_channels
+    def __init__(self, in_channels: int = None, kernel_size: int = 7) -> None:
         super().__init__()
         self.conv = nn.Conv1d(2, 1, kernel_size=kernel_size, padding=kernel_size // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
