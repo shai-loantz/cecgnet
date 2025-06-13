@@ -1,11 +1,11 @@
-import os
+from glob import glob
 
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset
 
 from data_tools.preprocess import preprocess
-from helper_code import find_records, load_label, load_signals, get_age, load_header, get_sex
+from helper_code import load_label, load_signals, get_age, load_header, get_sex
 from settings import PreprocessConfig
 from utils.logger import setup_logger
 
@@ -13,7 +13,8 @@ from utils.logger import setup_logger
 class ECGDataset(Dataset):
     def __init__(self, data_folder: str, input_length: int, preprocess_config: PreprocessConfig) -> None:
         self.input_length = input_length
-        self.record_files = [os.path.join(data_folder, record) for record in find_records(data_folder)]
+        # :-4 is for removing the filename extension (.dat)
+        self.record_files = [filename[:-4] for filename in glob(f'{data_folder}/*.dat')]
         self.preprocess_config = preprocess_config
         if not self.record_files:
             raise FileNotFoundError('No data was provided.')

@@ -49,12 +49,13 @@ class DataConfig(BaseConfig):
     input_length: int
     validation_size: float
     data_folder: Optional[str] = None
-    test_data_folder: str
+    test_folder_prefix: str
+    test_set_names: list[str]
     positive_sampling_factor: float
 
     def get_data_loader_config(self) -> dict:
         return self.model_dump(exclude={"input_length", "validation_size", "positive_sampling_factor",
-                                        "data_folder", "test_data_folder"})
+                                        "data_folder", "test_folder_prefix", "test_set_names"})
 
 
 class PreprocessConfig(BaseModel):
