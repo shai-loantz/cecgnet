@@ -21,7 +21,7 @@ SAMITROP_PATH = '/MLdata/shai/physionet2025/new/samitrop_test'
 CODE_15_SYMBOL = 'code15'
 PTBXL_SYMBOL = 'ptbxl'
 SAMITROP_SYMBOL = 'samitrop'
-DATASET_SAMPLE_SIZE = 800
+DATASET_SAMPLE_SIZE = 650
 
 config = Config()
 np.random.seed(4)
