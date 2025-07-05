@@ -19,6 +19,10 @@ class ECGDataset(Dataset):
         if not self.record_files:
             raise FileNotFoundError('No data was provided.')
         self.logger = setup_logger()
+        self.probabilities = None
+
+    def divide_mix(self, prob1, prob2):
+        self.probabilities = torch.stack((prob1, prob2), dim=0)
 
     def __len__(self):
         return len(self.record_files)
@@ -41,7 +45,7 @@ class ECGDataset(Dataset):
             raise NotImplementedError(f"Unrecognized sex: {sex_str}")
         return torch.tensor([age, sex], dtype=torch.float32)
 
-    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int):
         record_file_name = self.record_files[idx]
         try:
             features = extract_features(record_file_name, self.input_length, self.preprocess_config)
@@ -50,6 +54,9 @@ class ECGDataset(Dataset):
             features = torch.zeros(12, 934, dtype=torch.bfloat16)
         label = self.get_label(idx)
         metadata = self.get_metadata(idx)
+        if self.probabilities is not None:
+            return features, label, metadata, self.probabilities[0, idx], self.probabilities[1, idx]
+
         return features, label, metadata
 
 

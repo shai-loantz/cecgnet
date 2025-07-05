@@ -23,6 +23,16 @@ class Attention(str, Enum):
     SequentialAttention = 'sequential_attention'
 
 
+class DivideMixConfig(BaseConfig):
+    enabled: bool = False
+    warmup_epochs: int = 1  # epochs before starts classifying bad labels
+    clean_threshold: float = 0.75  # label considered clean above this threshold
+    # number of augmentation batches for each label computation, notice that this effectively doubles the epoch and batch size
+    augments: int = 2
+    lambda_unclean: float = 0.25  # how much should the computed labels effect loss
+    rampup_length: int = 16  # how many epochs after warmup until computed labels reach full effect
+
+
 class ModelName(str, Enum):
     RESNET = 'resnet'
     RESNET_ATTENTION = 'resnet_attention'
@@ -119,7 +129,9 @@ class Config(BaseSettings):
     pre_trainer: Optional[TrainerConfig] = None
     pre_model: Optional[ModelConfig] = None
     pre_data: Optional[DataConfig] = None
+    divide_mix: Optional[DivideMixConfig] = None
 
+    monitoring_param: str = "val_challenge_score"
     model_name: ModelName = ModelName.RESNET
     checkpoint_name: Optional[str] = None
     manual_config: bool
@@ -148,10 +160,12 @@ class Config(BaseSettings):
     def get_trainer_params(self, use_wandb: bool = True) -> dict:
         params = self.lightning.model_dump()
         params['logger'] = WandbLogger() if use_wandb and is_main_proc() else None
+        if self.divide_mix.enabled:
+            self.monitoring_param = "val_1_challenge_score"
         self.model_checkpoint_cb = ModelCheckpoint(
             dirpath=self.model_folder,
             filename=self.get_checkpoint_name(),
-            monitor="val_challenge_score",
+            monitor=self.monitoring_param,
             mode="max",
             save_top_k=1,
         )
@@ -162,6 +176,10 @@ class Config(BaseSettings):
             params.update(self.pre_trainer.model_dump())
         else:
             params.update(self.trainer.model_dump())
+        if self.divide_mix.enabled:
+            params['reload_dataloaders_every_n_epochs'] = 1
+            # can't use grad batches in current implementation, can implement it manually if we want
+            params['accumulate_grad_batches'] = 1
 
         return params
 
@@ -204,4 +222,6 @@ class Config(BaseSettings):
                            'pre_trainer': self.pre_trainer.model_dump(),
                            'pre_model': self.pre_model.model_dump(),
                            'pre_data': self.pre_data.model_dump(), })
+        if self.divide_mix.enabled:
+            params.update({'divide_mix': self.divide_mix.model_dump()})
         return params
