@@ -16,12 +16,12 @@ from settings import Config, PreprocessConfig
 
 CODE_15_PATH = '/MLdata/shai/physionet2025/new/code15_test'
 PTBXL_PATH = '/MLdata/shai/physionet2025/new/ptbxl_test'
-SAMITROP_PATH = '/MLdata/shai/physionet2025/new/samitrop_test'
+SAMITROP_PATH = '/MLdata/shai/physionet2025/new/samitrop'
 
 CODE_15_SYMBOL = 'code15'
 PTBXL_SYMBOL = 'ptbxl'
 SAMITROP_SYMBOL = 'samitrop'
-DATASET_SAMPLE_SIZE = 650
+DATASET_SAMPLE_SIZE = 800
 
 config = Config()
 np.random.seed(4)
