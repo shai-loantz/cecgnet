@@ -27,7 +27,7 @@ def plot(embeddings: np.ndarray, dataset_labels: list, classification_labels: li
 
     # Prepare classification labels
     class_int_labels, class_label_map = prepare_labels(classification_labels)
-    class_colors = [plt.cm.tab20(i) for i in range(len(class_label_map))]
+    class_colors = [plt.cm.tab10(i) for i in range(len(class_label_map))]
     class_cmap = mcolors.ListedColormap(class_colors)
 
     # Create figure
