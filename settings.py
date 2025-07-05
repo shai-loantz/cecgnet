@@ -25,7 +25,7 @@ class Attention(str, Enum):
 
 class DivideMixConfig(BaseConfig):
     enabled: bool = False
-    warmup_epochs: int = 1  # epochs before starts classifying bad labels
+    warmup_epochs: int = 7  # epochs before starts classifying bad labels
     clean_threshold: float = 0.75  # label considered clean above this threshold
     # number of augmentation batches for each label computation, notice that this effectively doubles the epoch and batch size
     augments: int = 2
