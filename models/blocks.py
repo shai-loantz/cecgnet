@@ -77,12 +77,12 @@ ATTENTION: dict[str, Type[nn.Module]] = {
 
 
 class BasicConv(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, *args, activation: bool = True, bias: bool = False,
-                 **kwargs) -> None:
+    def __init__(self, in_channels: int, out_channels: int, activation_function: nn.Module, *args,
+                 activation: bool = True, bias: bool = False, **kwargs) -> None:
         super().__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, bias=bias, *args, **kwargs)
         self.bn = nn.BatchNorm1d(out_channels)
-        self.activation = nn.ReLU() if activation else None
+        self.activation = activation_function if activation else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.bn(self.conv(x))
