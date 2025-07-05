@@ -55,7 +55,10 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
 
 def get_model_from_checkpoint(config: Config) -> Model:
     # TODO: Make this work with a proper entry for the challenge (when we don't pre-train)
-    model_class = MODELS[config.model_name]
+    if config.divide_mix.enabled:
+        model_class = DivideMix
+    else:
+        model_class = MODELS[config.model_name]
     checkpoint_path = config.model_checkpoint_cb.best_model_path
     if checkpoint_path == '':
         raise Exception('No checkpoint was saved')

@@ -37,7 +37,7 @@ def main():
         logger.info('Pre-training completed')
     else:  # load from pretrained model
         try:
-            model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model, config.augmentations)
+            model = load_model(config.pretraining_checkpoint_path, config.model_name, config.model, config.augmentations, config.divide_mix.enabled)
         except:
             logger.debug('load pre-training failed')
             if config.divide_mix.enabled:
