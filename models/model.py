@@ -7,19 +7,23 @@ from torch import Tensor, randn, Size, sigmoid, tensor
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 
-from settings import ModelConfig
+from data_tools.augmentations import get_augmentations
+from settings import ModelConfig, AugmentationsConfig
 from utils.logger import setup_logger, logger
 from utils.metrics import calculate_metrics
 
+METADATA_DIM = 2
+
 
 class Model(LightningModule):
-    def __init__(self, config: ModelConfig) -> None:
+    def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig) -> None:
         super().__init__()
         self.config = config
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=self._get_loss_weights())
         self.our_logger = None
-        self.targets: list[Tensor] = []
-        self.outputs: list[Tensor] = []
+        self.targets: dict[str, list[Tensor]] = {}
+        self.outputs: dict[str, list[Tensor]] = {}
+        self.augmentations = get_augmentations(augmentations, config.input_channels)
 
     def setup(self, stage=None):
         if self.our_logger is None:
@@ -27,22 +31,27 @@ class Model(LightningModule):
             self.our_logger.info(f"Logger initialized in setup() on rank {self.global_rank}")
 
     def training_step(self, batch: list[Tensor], batch_idx: int) -> Tensor:
-        inputs, targets = batch
-        loss, _, _ = self._run_batch([inputs, targets], 'train')
+        inputs, targets, metadata = batch
+        inputs = self.augmentations(inputs)
+        loss, _, _ = self._run_batch([inputs, targets, metadata], 'train')
         return loss
 
     def _on_metric_epoch_start(self) -> None:
-        self.targets = []
-        self.outputs = []
+        self.targets = {}
+        self.outputs = {}
 
     def _metric_step(self, batch: list[Tensor], step_name: str) -> None:
+        if step_name not in self.targets or step_name not in self.outputs:
+            self.targets[step_name] = []
+            self.outputs[step_name] = []
+
         _, outputs, targets = self._run_batch(batch, step_name)
-        self.targets.append(targets.detach().cpu())
-        self.outputs.append(outputs.detach().cpu())
+        self.targets[step_name].append(targets.detach().cpu())
+        self.outputs[step_name].append(outputs.detach().cpu())
 
     def _on_metric_epoch_end(self, step_name: str) -> None:
-        targets = np.array(torch.cat(self.targets, dim=0).to(torch.float32)).flatten()
-        outputs = np.array(torch.cat(self.outputs, dim=0).to(torch.float32)).flatten()
+        targets = np.array(torch.cat(self.targets[step_name], dim=0).to(torch.float32)).flatten()
+        outputs = np.array(torch.cat(self.outputs[step_name], dim=0).to(torch.float32)).flatten()
         metrics = calculate_metrics(targets, outputs, self.config.threshold)
         self.log_dict({f'{step_name}_{key}': value for key, value in metrics.items()})
 
@@ -59,18 +68,21 @@ class Model(LightningModule):
         #     write_outputs(self.trainer.global_rank, self.current_epoch, get_run_id(), outputs, targets)
         self._metric_step(batch, 'val')
 
-    def test_step(self, batch: list[Tensor], batch_idx: int) -> None:
-        self._metric_step(batch, 'test')
+    def test_step(self, batches: dict[str, list[Tensor]], batch_idx: int, dataloader_idx: int = 0) -> None:
+        for name, batch in batches.items():
+            if batch is not None:
+                self._metric_step(batch, name)
 
     def on_validation_epoch_end(self) -> None:
         self._on_metric_epoch_end('val')
 
     def on_test_epoch_end(self) -> None:
-        self._on_metric_epoch_end('test')
+        for name in self.targets.keys():
+            self._on_metric_epoch_end(name)
 
     def _run_batch(self, batch: list[Tensor], name: str) -> tuple[Tensor, Tensor, Tensor]:
-        inputs, targets = batch
-        outputs = self(inputs)
+        inputs, targets, metadata = batch
+        outputs = self(inputs, metadata)
         loss = self.criterion(outputs, targets)
         self.log(f'{name}_loss', loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
         return loss, outputs, targets
@@ -91,6 +103,20 @@ class Model(LightningModule):
                 "interval": "step",
             }
         }
+
+    def add_metadata(self, x: Tensor, metadata: tensor) -> Tensor:
+        if x.shape[0] != metadata.shape[0]:
+            raise ValueError("Batch size mismatch between x and metadata")
+        if x.dim() > 2:
+            raise ValueError("need 1D embeddings for metadata concatination")
+
+        if metadata is None:
+            metadata = torch.zeros(x.size(0), METADATA_DIM, device=x.device)
+        elif torch.isnan(metadata).any():
+            metadata = torch.nan_to_num(metadata, nan=0.0)
+
+        # Concatenate along the feature dimension
+        return torch.cat([x, metadata], dim=1)
 
     def change_params(self, config: ModelConfig) -> None:
         """ used for changing pretraining to post training """
@@ -115,7 +141,7 @@ class Model(LightningModule):
         from settings import Config
         config = Config()
         x = randn(batch_size, config.model.input_channels, config.data.input_length)
-        model = cls(config.model)
+        model = cls(config.model, config.augmentations)
         logger.info(str(model))
         logger.info(summarize(model))
         logits = model(x).detach().squeeze()

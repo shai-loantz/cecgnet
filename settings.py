@@ -49,23 +49,30 @@ class DataConfig(BaseConfig):
     input_length: int
     validation_size: float
     data_folder: Optional[str] = None
-    test_data_folder: str
+    test_folder_prefix: str
+    test_set_names: list[str]
     positive_sampling_factor: float
 
     def get_data_loader_config(self) -> dict:
         return self.model_dump(exclude={"input_length", "validation_size", "positive_sampling_factor",
-                                        "data_folder", "test_data_folder"})
+                                        "data_folder", "test_folder_prefix", "test_set_names"})
 
 
 class PreprocessConfig(BaseModel):
     resample_freq: int
     low_cut_freq: float
     high_cut_freq: float
+    random_edge_cut: bool = False
 
 
 class TrainerConfig(BaseConfig):
     max_epochs: int = 30
     accumulate_grad_batches: int = 16
+
+
+class AugmentationsConfig(BaseConfig):
+    apply_prob: float = 1
+    channel_erase: bool = False
 
 
 class LightningConfig(BaseModel):
@@ -84,7 +91,7 @@ class ModelConfig(BaseConfig):
     use_weighted_loss: bool = True
     positive_prevalence: float
     warmup_steps: int = 1000
-
+    add_metadata_end: bool = True
     attention: Attention = Attention.SelfAttention
 
 
@@ -102,6 +109,7 @@ class Config(BaseSettings):
     pre_process: PreprocessConfig
     model: ModelConfig
     model_folder: str = 'checkpoints'
+    augmentations: AugmentationsConfig
 
     # pre training settings
     pretraining: bool
@@ -159,25 +167,41 @@ class Config(BaseSettings):
 
     def get_checkpoint_name(self) -> str:
         name = self.checkpoint_name or self.model_name.value
-        return f'pretraining_{name}' if self.pretraining else name
+        name = f'pre_{name}' if self.pretraining else name
+        name = f'{name}_meta' if self.model.add_metadata_end else name
+        return name
 
     def update_settings(self, data_folder: str, model_folder: str):
         self.data.data_folder = data_folder
         self.model_folder = model_folder
 
+    def update_wandb_config(self, wandb_config: dict):
+        for key, value in wandb_config.items():
+            keys = key.split('__')
+            # if key can be seperated by __ once assumes that it's a key of a base config
+            if len(keys) == 1 and hasattr(self, key):
+                setattr(self, key, value)
+            elif len(keys) == 2 and hasattr(self, keys[0]):
+                attr = getattr(self, keys[0])
+                if hasattr(attr, keys[1]):
+                    setattr(attr, keys[1], value)
+
     def get_wandb_params(self) -> dict:
-        return {
+        params = {
             'trainer': self.get_trainer_params(),
             'data': self.data.model_dump(),
             'pre_process': self.pre_process.model_dump(),
             'model': self.model.model_dump(),
             'model_folder': self.model_folder,
             'pretraining': self.pretraining,
-            'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
-            'pre_trainer_config': self.pre_trainer_config.model_dump(),
-            'pre_trainer': self.pre_trainer.model_dump(),
-            'pre_model': self.pre_model.model_dump(),
-            'pre_data': self.pre_data.model_dump(),
             'model_name': self.model_name.value,
             'checkpoint_name': self.get_checkpoint_name(),
+            'augmentations': self.augmentations.model_dump(),
         }
+        if self.pretraining:
+            params.update({'pretraining_checkpoint_path': self.pretraining_checkpoint_path,
+                           'pre_trainer_config': self.pre_trainer_config.model_dump(),
+                           'pre_trainer': self.pre_trainer.model_dump(),
+                           'pre_model': self.pre_model.model_dump(),
+                           'pre_data': self.pre_data.model_dump(), })
+        return params

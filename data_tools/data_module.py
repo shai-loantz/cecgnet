@@ -1,8 +1,10 @@
+import os
 import random
 
 import numpy as np
 import torch
 from lightning import LightningDataModule
+from lightning.pytorch.utilities import CombinedLoader
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset, Subset, Sampler
 
@@ -38,8 +40,16 @@ class DataModule(LightningDataModule):
             self.train_labels = [labels[i] for i in train_indices]
             logger.info(f'Train set size: {len(train_indices)}, Validation set size: {len(validation_indices)}')
         if stage == "test":
-            self.test_dataset = ECGDataset(self.data_config.test_data_folder, self.data_config.input_length, self.preprocess_config)
-            logger.info(f'Train set size: {len(self.test_dataset)}')
+            self.test_datasets = {
+                name: ECGDataset(os.path.join(self.data_config.test_folder_prefix, name),
+                                 self.data_config.input_length, self.preprocess_config)
+                for name in self.data_config.test_set_names
+            }
+            sizes = {
+                name: len(dataset)
+                for name, dataset in self.test_datasets.items()
+            }
+            logger.info(f'Test set sizes: {sizes}')
 
     def train_dataloader(self):
         sample_weights = torch.tensor([
@@ -58,9 +68,13 @@ class DataModule(LightningDataModule):
         return self._get_data_loader(self.val_dataset)
 
     def test_dataloader(self):
-        return self._get_data_loader(self.test_dataset)
+        return CombinedLoader({
+            name: self._get_data_loader(dataset)
+            for name, dataset in self.test_datasets.items()
+        }, 'max_size')
 
-    def _get_data_loader(self, data_set: Dataset, shuffle: bool = False, sampler: Sampler = None, **kwargs) -> DataLoader:
+    def _get_data_loader(self, data_set: Dataset, shuffle: bool = False, sampler: Sampler = None,
+                         **kwargs) -> DataLoader:
         data_loader_config = self.data_loader_config.copy()
         data_loader_config.update(kwargs)
         return DataLoader(data_set, shuffle=shuffle and (sampler is None), sampler=sampler,
