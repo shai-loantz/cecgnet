@@ -14,7 +14,8 @@ config = Config()
 
 def get_model_from_checkpoint() -> Model:
     print(f'Loading model {config.model_name.value} from {CHECKPOINT_PATH}')
-    return SimpleResNet.load_from_checkpoint(str(CHECKPOINT_PATH), config=config.model)
+    return SimpleResNet.load_from_checkpoint(str(CHECKPOINT_PATH),
+                                             config=config.model, augmentations=config.augmentations)
 
 
 # Specific to ResNet!!!
