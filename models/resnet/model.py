@@ -1,7 +1,7 @@
 from torch import Tensor, nn
 
 from models.model import Model
-from models.resnet.utils import get_head_module, get_resnet_blocks, LayerConf, get_tail_module
+from models.resnet.utils import get_resnet_head_module, get_resnet_blocks, LayerConf, get_tail_module
 from settings import ModelConfig, AugmentationsConfig
 
 
@@ -13,7 +13,7 @@ class SimpleResNet(Model):
         self.tail = get_tail_module(config.input_channels)
         self.resnet_blocks = get_resnet_blocks(self.layer_conf)
         self.gap = nn.AdaptiveAvgPool1d(1)
-        self.head = get_head_module(self.layer_conf, self.config.add_metadata_end)
+        self.head = get_resnet_head_module(self.layer_conf, self.config.add_metadata_end)
 
     def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.tail(x)

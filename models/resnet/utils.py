@@ -4,6 +4,7 @@ from torch import nn
 from models.blocks import BasicConv
 from models.model import METADATA_DIM
 from models.resnet.consts import BASE_CHANNELS, LayerConf, CHANNEL_EXPANSION, HEAD_HIDDEN_DIM
+from models.utils import get_head_module
 
 
 class ResNetBlock(nn.Module):
@@ -53,13 +54,6 @@ def get_resnet_blocks(layer_conf: LayerConf, base_channels: int = BASE_CHANNELS)
     return blocks
 
 
-def get_head_module(layer_conf: LayerConf, add_metadata_end: bool) -> nn.Sequential:
-    head_steps: list[nn.Module] = []
+def get_resnet_head_module(layer_conf: LayerConf, add_metadata_end: bool) -> nn.Sequential:
     in_features = BASE_CHANNELS * (2 ** (len(layer_conf.value) + 1))  # number of channels after last conv
-    if add_metadata_end: in_features += METADATA_DIM
-    for out_features in HEAD_HIDDEN_DIM:
-        head_steps.append(nn.Linear(in_features, out_features))
-        head_steps.append(nn.ReLU())
-        in_features = out_features
-    head_steps.append(nn.Linear(in_features, 1))
-    return nn.Sequential(*head_steps)
+    return get_head_module(in_features, add_metadata_end)
