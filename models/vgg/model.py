@@ -8,33 +8,33 @@ class VGG1D(Model):
     def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig):
         super(VGG1D, self).__init__(config, augmentations)
         self.conv_layers = nn.Sequential(
-            nn.Conv1d(config.input_channels, 64, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(64, 64, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv1d(config.input_channels, 64, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(64, 64, kernel_size=3, padding=1), self.activation,
             nn.MaxPool1d(kernel_size=2, stride=2),
 
-            nn.Conv1d(64, 128, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(128, 128, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv1d(64, 128, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(128, 128, kernel_size=3, padding=1), self.activation,
             nn.MaxPool1d(kernel_size=2, stride=2),
 
-            nn.Conv1d(128, 256, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(256, 256, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(256, 256, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv1d(128, 256, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(256, 256, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(256, 256, kernel_size=3, padding=1), self.activation,
             nn.MaxPool1d(kernel_size=2, stride=2),
 
-            nn.Conv1d(256, 512, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv1d(256, 512, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(512, 512, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(512, 512, kernel_size=3, padding=1), self.activation,
             nn.MaxPool1d(kernel_size=2, stride=2),
 
-            nn.Conv1d(512, 512, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv1d(512, 512, kernel_size=3, padding=1), nn.ReLU(),
+            nn.Conv1d(512, 512, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(512, 512, kernel_size=3, padding=1), self.activation,
+            nn.Conv1d(512, 512, kernel_size=3, padding=1), self.activation,
             nn.MaxPool1d(kernel_size=2, stride=2),
         )
         fc_in_features = 14848
         if config.add_metadata_end: fc_in_features += 2
         self.fc_layers = nn.Sequential(
-            nn.Linear(fc_in_features, 4096), nn.ReLU(), nn.Dropout(),
+            nn.Linear(fc_in_features, 4096), self.activation, nn.Dropout(),
             nn.Linear(4096, 1),
         )
 
