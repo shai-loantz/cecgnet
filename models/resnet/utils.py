@@ -9,19 +9,23 @@ from models.resnet.consts import BASE_CHANNELS, LayerConf, CHANNEL_EXPANSION, HE
 class ResNetBlock(nn.Module):
     """ResNet block with bottleneck"""
 
-    def __init__(self, in_channels: int, base_channels: int, expansion: int = 4, downsample: bool = False) -> None:
+    def __init__(self, in_channels: int, base_channels: int, activation_function: nn.Module,
+                 expansion: int = 4, downsample: bool = False) -> None:
         super().__init__()
         stride = 2 if downsample else 1
-        self.conv1 = BasicConv(in_channels, base_channels, kernel_size=1)
-        self.conv2 = BasicConv(base_channels, base_channels, kernel_size=3, padding=1, stride=stride)
-        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation=False, kernel_size=1)
+        self.conv1 = BasicConv(in_channels, base_channels, activation_function, kernel_size=1)
+        self.conv2 = BasicConv(base_channels, base_channels, activation_function,
+                               kernel_size=3, padding=1, stride=stride)
+        self.conv3 = BasicConv(base_channels, base_channels * expansion, activation_function,
+                               activation=False, kernel_size=1)
 
         self.identity_downsample = BasicConv(in_channels,
                                              base_channels * expansion,
+                                             activation_function,
                                              activation=False,
                                              kernel_size=1,
                                              stride=2) if downsample else None
-        self.activation = nn.ReLU()
+        self.activation = activation_function
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         identity = self.identity_downsample(x) if self.identity_downsample else x
@@ -38,28 +42,29 @@ def get_tail_module(in_channels: int) -> nn.Sequential:
     )
 
 
-def get_resnet_blocks(layer_conf: LayerConf, base_channels: int = BASE_CHANNELS) -> nn.ModuleList:
+def get_resnet_blocks(layer_conf: LayerConf, activation_function: nn.Module,
+                      base_channels: int = BASE_CHANNELS) -> nn.ModuleList:
     blocks = nn.ModuleList()
     in_channels = base_channels
     for layer_size in layer_conf.value:
-        blocks.append(ResNetBlock(in_channels, base_channels, downsample=True))
+        blocks.append(ResNetBlock(in_channels, base_channels, activation_function, downsample=True))
 
         in_channels = base_channels * CHANNEL_EXPANSION
         for _ in range(layer_size - 1):
-            blocks.append(ResNetBlock(in_channels, base_channels))
+            blocks.append(ResNetBlock(in_channels, base_channels, activation_function))
 
         base_channels = base_channels * 2
 
     return blocks
 
 
-def get_head_module(layer_conf: LayerConf, add_metadata_end: bool) -> nn.Sequential:
+def get_head_module(layer_conf: LayerConf, add_metadata_end: bool, activation_function: nn.Module) -> nn.Sequential:
     head_steps: list[nn.Module] = []
     in_features = BASE_CHANNELS * (2 ** (len(layer_conf.value) + 1))  # number of channels after last conv
     if add_metadata_end: in_features += METADATA_DIM
     for out_features in HEAD_HIDDEN_DIM:
         head_steps.append(nn.Linear(in_features, out_features))
-        head_steps.append(nn.ReLU())
+        head_steps.append(activation_function)
         in_features = out_features
     head_steps.append(nn.Linear(in_features, 1))
     return nn.Sequential(*head_steps)

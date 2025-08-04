@@ -11,9 +11,9 @@ class SimpleResNet(Model):
     def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig) -> None:
         super().__init__(config, augmentations)
         self.tail = get_tail_module(config.input_channels)
-        self.resnet_blocks = get_resnet_blocks(self.layer_conf)
+        self.resnet_blocks = get_resnet_blocks(self.layer_conf, self.activation)
         self.gap = nn.AdaptiveAvgPool1d(1)
-        self.head = get_head_module(self.layer_conf, self.config.add_metadata_end)
+        self.head = get_head_module(self.layer_conf, self.config.add_metadata_end, self.activation)
 
     def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.tail(x)

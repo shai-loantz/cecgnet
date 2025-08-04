@@ -13,6 +13,12 @@ from utils.logger import setup_logger, logger
 from utils.metrics import calculate_metrics
 
 METADATA_DIM = 2
+ACTIVATION_FUNCTIONS = {
+    'relu': nn.ReLU(),
+    'gelu': nn.GELU(),
+    'elu': nn.ELU(),
+    'swish': nn.SiLU(),
+}
 
 
 class Model(LightningModule):
@@ -24,6 +30,8 @@ class Model(LightningModule):
         self.targets: dict[str, list[Tensor]] = {}
         self.outputs: dict[str, list[Tensor]] = {}
         self.augmentations = get_augmentations(augmentations, config.input_channels)
+        self.activation = ACTIVATION_FUNCTIONS.get(config.activation_function, nn.ReLU)
+        logger.info(f'Using {self.activation.__name__} as activation function')
 
     def setup(self, stage=None):
         if self.our_logger is None:

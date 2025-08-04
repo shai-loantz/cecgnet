@@ -103,6 +103,7 @@ class ModelConfig(BaseConfig):
     warmup_steps: int = 1000
     add_metadata_end: bool = True
     attention: Attention = Attention.SelfAttention
+    activation_function: str = 'relu'
 
 
 class PreTrainConfig(BaseModel):
