@@ -1,5 +1,6 @@
 from typing import Type
 
+from models.hubert.model import Hubert
 from models.model import Model
 from models.resnet.model import SimpleResNet
 from models.resnet_attention.model import ResNetAttention
@@ -11,4 +12,5 @@ MODELS: dict[str, Type[Model]] = {
     'resnet_attention': ResNetAttention,
     'vgg': VGG1D,
     'small': Small,
+    'hubert': Hubert,
 }

@@ -1,7 +1,7 @@
 from torch import Tensor, nn
 
 from models.model import Model
-from models.resnet.utils import get_head_module, get_resnet_blocks, LayerConf, get_tail_module
+from models.resnet.utils import get_resnet_head_module, get_resnet_blocks, LayerConf, get_tail_module
 from settings import ModelConfig, AugmentationsConfig
 
 

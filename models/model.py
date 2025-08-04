@@ -113,15 +113,15 @@ class Model(LightningModule):
         }
 
     def add_metadata(self, x: Tensor, metadata: tensor) -> Tensor:
-        if x.shape[0] != metadata.shape[0]:
-            raise ValueError("Batch size mismatch between x and metadata")
-        if x.dim() > 2:
-            raise ValueError("need 1D embeddings for metadata concatination")
-
         if metadata is None:
             metadata = torch.zeros(x.size(0), METADATA_DIM, device=x.device)
         elif torch.isnan(metadata).any():
             metadata = torch.nan_to_num(metadata, nan=0.0)
+
+        if x.shape[0] != metadata.shape[0]:
+            raise ValueError("Batch size mismatch between x and metadata")
+        if x.dim() > 2:
+            raise ValueError("need 1D embeddings for metadata concatination")
 
         # Concatenate along the feature dimension
         return torch.cat([x, metadata], dim=1)
