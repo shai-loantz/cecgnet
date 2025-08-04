@@ -7,9 +7,9 @@ wandb==0.19.7
 pydantic~=2.10.6
 pydantic-settings
 numpy==2.0.2
-wfdb==4.1.2
+wfdb~=4.3.0
 pecg==2.0.5
 h5py==3.12.1
-scipy~=1.15.2
+scipy~=1.14.0
 PyWavelets~=1.8.0
 scikit-learn
