@@ -3,3 +3,4 @@ matplotlib
 ipython
 pandas==2.2.2
 h5py==3.12.1
+umap-learn

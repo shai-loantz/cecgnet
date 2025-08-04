@@ -7,23 +7,26 @@ from settings import Attention
 
 
 def get_attention_layers(layer_conf: LayerConf, attention_type: Attention,
-                         base_channels: int = BASE_CHANNELS) -> nn.ModuleList:
+                         activation_function: nn.Module, base_channels: int = BASE_CHANNELS) -> nn.ModuleList:
     attention_class = ATTENTION[attention_type]
     layers = nn.ModuleList()
     in_channels = base_channels
     for layer_size in layer_conf.value:
         layer = nn.ModuleList()
-        layer.append(ResNetBlock(in_channels, base_channels, downsample=True))
+        layer.append(ResNetBlock(in_channels, base_channels, activation_function, downsample=True))
 
         in_channels = base_channels * CHANNEL_EXPANSION
         for _ in range(layer_size - 1):
-            layer.append(ResNetBlock(in_channels, base_channels))
-
-        layer.append(attention_class(in_channels=in_channels))
+            layer.append(ResNetBlock(in_channels, base_channels, activation_function))
+            if attention_type == attention_type.SEBlock:
+                layer.append(attention_class(in_channels=in_channels))
+        if attention_type == attention_type.SequentialAttention:
+            layer.append(attention_class(in_channels=in_channels))
         layers.append(nn.Sequential(*layer))
 
         base_channels = base_channels * 2
-
+        if attention_type == attention_type.SelfAttention:
+            layers.append(attention_class(in_channels=in_channels))
     return layers
 
 

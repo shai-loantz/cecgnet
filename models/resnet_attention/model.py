@@ -12,9 +12,9 @@ class ResNetAttention(Model):
     def __init__(self, config: ModelConfig, augmentations: AugmentationsConfig) -> None:
         super().__init__(config, augmentations)
         self.tail = get_tail_module(config.input_channels)
-        self.layers = get_attention_layers(self.layer_conf, config.attention)
+        self.layers = get_attention_layers(self.layer_conf, config.attention, self.activation)
         self.gap = nn.AdaptiveAvgPool1d(1)
-        self.head = get_resnet_head_module(self.layer_conf, config.add_metadata_end)
+        self.head = get_head_module(self.layer_conf, config.add_metadata_end, self.activation)
 
     def forward(self, x: Tensor, metadata: Tensor = None) -> Tensor:
         x = self.tail(x)
