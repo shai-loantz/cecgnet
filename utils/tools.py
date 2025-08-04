@@ -2,6 +2,7 @@ from lightning import Trainer
 
 from data_tools.data_module import DataModule
 from models import Model, MODELS
+from models.dividemix.model import DivideMix
 from settings import Config, ModelConfig, ModelName, AugmentationsConfig
 from utils.ddp import is_main_proc
 from utils.logger import logger
@@ -35,8 +36,11 @@ def test(config: Config) -> None:
 
 
 def load_model(checkpoint_path: str, model_name: ModelName, model_config: ModelConfig,
-               augmentations: AugmentationsConfig):
-    model_class = MODELS[model_name]
+               augmentations: AugmentationsConfig, divide = False):
+    if divide:
+        model_class = DivideMix
+    else:
+        model_class = MODELS[model_name]
     logger.info(f'Loading model {model_name.value} from {checkpoint_path}')
     return model_class.load_from_checkpoint(str(checkpoint_path), config=model_config, augmentations=augmentations)
 
@@ -51,7 +55,10 @@ def log_metrics(trainer: Trainer, threshold: float) -> None:
 
 def get_model_from_checkpoint(config: Config) -> Model:
     # TODO: Make this work with a proper entry for the challenge (when we don't pre-train)
-    model_class = MODELS[config.model_name]
+    if config.divide_mix.enabled:
+        model_class = DivideMix
+    else:
+        model_class = MODELS[config.model_name]
     checkpoint_path = config.model_checkpoint_cb.best_model_path
     if checkpoint_path == '':
         raise Exception('No checkpoint was saved')

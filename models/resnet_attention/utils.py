@@ -18,12 +18,15 @@ def get_attention_layers(layer_conf: LayerConf, attention_type: Attention,
         in_channels = base_channels * CHANNEL_EXPANSION
         for _ in range(layer_size - 1):
             layer.append(ResNetBlock(in_channels, base_channels, activation_function))
-
-        layer.append(attention_class(in_channels=in_channels))
+            if attention_type == attention_type.SEBlock:
+                layer.append(attention_class(in_channels=in_channels))
+        if attention_type == attention_type.SequentialAttention:
+            layer.append(attention_class(in_channels=in_channels))
         layers.append(nn.Sequential(*layer))
 
         base_channels = base_channels * 2
-
+        if attention_type == attention_type.SelfAttention:
+            layers.append(attention_class(in_channels=in_channels))
     return layers
 
 
